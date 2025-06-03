@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yazarlarımız - Kritik Yayınları</title>
+<meta name="description" content="Kritik Yayınları'nın değerli yazarları. Türk ve dünya edebiyatının usta kalemlerini tanıyın, eserlerini keşfedin.">
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>tailwind.config={theme:{extend:{colors:{primary:'#d4af37',secondary:'#1a1a1a',success:'#10B981',error:'#EF4444'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+<link rel="icon" type="image/png" href="images/favicon.png">
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Supabase Config -->
+<script src="js/supabase-config.js"></script>
+<!-- Banner Client JS -->
+<script src="js/banners-client.js"></script>
+<!-- Sayfa stili -->
+<style>
+:where([class^="ri-"])::before { content: "\f3c2"; }
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+        .banner-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.3s ease;
+        }
+
+        /* Header için özel border */
+        .border-b-3 {
+            border-bottom-width: 3px;
+        }
+</style>
+</head>
+<body class="bg-white min-h-screen">
+<!-- Login Modal - Kaldırıldı -->
+
+    <!-- Header -->
+<header class="w-full bg-white shadow-lg border-b border-gray-100 sticky top-0 z-50">
+  <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+    <div class="flex items-center">
+      <a href="anasayfa.html" class="flex items-center hover:opacity-80 transition-opacity">
+        <img src="images/Kritik_yayınlari.png" alt="Kritik Yayınları Logo" class="h-24 w-auto">
+      </a>
+    </div>
+    <nav class="hidden md:flex space-x-8">
+      <a href="anasayfa.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Ana Sayfa</a>
+      <a href="hakkimizda.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Hakkımızda</a>
+      <a href="kitaplar.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Kitaplar</a>
+      <a href="yazarlar.html" class="text-primary font-bold border-b-3 border-primary py-2 text-lg">Yazarlar</a>
+      <a href="iletisim.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">İletişim</a>
+    </nav>
+    <div class="flex items-center">
+      <button class="block md:hidden w-10 h-10 flex items-center justify-center text-secondary hover:text-primary transition-colors" id="mobileMenuToggle">
+        <i class="ri-menu-line text-xl"></i>
+      </button>
+    </div>
+  </div>
+  <!-- Mobil Menü -->
+  <div class="md:hidden hidden bg-white w-full border-t border-gray-200 shadow-lg" id="mobileMenu">
+    <div class="container mx-auto px-4 py-3">
+      <nav class="flex flex-col space-y-1">
+        <a href="anasayfa.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Ana Sayfa</a>
+        <a href="hakkimizda.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Hakkımızda</a>
+        <a href="kitaplar.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Kitaplar</a>
+        <a href="yazarlar.html" class="text-primary font-bold py-3 px-3 border-b border-gray-100 text-lg">Yazarlar</a>
+        <a href="iletisim.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">İletişim</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+    <!-- Yazarlar başlık bölümüne banner container ekle -->
+    <section class="py-12 bg-gradient-to-r from-white to-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-bold text-secondary mb-2">Yazarlarımız</h1>
+                    <p class="text-gray-600">Kritik Yayınları yazarlarını keşfedin</p>
+                </div>
+                <div class="mt-4 md:mt-0">
+                    <div class="relative">
+                        <input type="text" id="authorSearch" placeholder="Yazar ara..." class="w-full px-4 py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:border-primary">
+                        <i class="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Banner Container -->
+            <div id="banner-container" class="w-full h-[400px] rounded-lg overflow-hidden bg-gradient-to-r from-primary/10 to-secondary/10 flex items-center justify-center mb-8">
+                <!-- Fallback Banner -->
+                <div class="text-center p-8">
+                    <div class="mb-4">
+                        <i class="ri-quill-pen-line text-6xl text-primary"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-secondary mb-2">Yazarlarımızı Keşfedin</h2>
+                    <p class="text-lg text-gray-600 mb-4">Kritik Yayınları'nın değerli yazarları</p>
+                    <a href="#authors-section" class="inline-flex items-center bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors">
+                        Yazarları İncele
+                        <i class="ri-arrow-down-line ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Alfabe Filtresi -->
+    <section class="bg-white py-4 border-b border-gray-200 sticky top-0 z-10">
+        <div class="container mx-auto px-4">
+            <div class="overflow-x-auto">
+                <div class="flex space-x-1 min-w-max">
+                    <button class="alphabet-btn active px-3 py-2 rounded hover:bg-gray-100 transition-colors font-medium text-primary" data-letter="all">Tümü</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="a">A</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="b">B</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="c">C</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="ç">Ç</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="d">D</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="e">E</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="f">F</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="g">G</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="h">H</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="i">İ</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="j">J</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="k">K</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="l">L</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="m">M</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="n">N</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="o">O</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="ö">Ö</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="p">P</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="r">R</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="s">S</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="ş">Ş</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="t">T</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="u">U</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="ü">Ü</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="v">V</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="y">Y</button>
+                    <button class="alphabet-btn px-3 py-2 rounded hover:bg-gray-100 transition-colors" data-letter="z">Z</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Yazarlar Listesi -->
+    <section id="authors-section" class="py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 authors-grid">
+                <!-- Yükleniyor göstergesi, JavaScript ile doldurulacak -->
+                <div class="col-span-full flex justify-center items-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    <span class="ml-3 text-gray-600">Yazarlar yükleniyor...</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Abone Ol Bölümü -->
+<section class="py-16 bg-gradient-to-r from-gray-900 to-secondary">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div class="text-center md:text-left md:w-1/2">
+                <h2 class="text-3xl font-bold text-white mb-4">Yeni Çıkan Kitaplardan Haberdar Olun</h2>
+                <p class="text-gray-300 text-lg">Bültenimize abone olarak yeni çıkan kitaplar, yazar etkinlikleri ve özel indirimlerden ilk siz haberdar olun.</p>
+            </div>
+            <div class="w-full md:w-1/2 max-w-md">
+                <form class="flex flex-col sm:flex-row gap-3">
+                    <input type="email" placeholder="E-posta adresiniz" required class="flex-grow px-4 py-3 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    <button type="submit" class="bg-primary text-white font-medium px-6 py-3 rounded-r-md hover:bg-opacity-90 transition duration-300 whitespace-nowrap">Abone Ol</button>
+                </form>
+                </div>
+                </div>
+                    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-black text-white py-12">
+    <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+                <div class="mb-4">
+                    <a href="anasayfa.html" class="inline-block hover:opacity-80 transition-opacity">
+                        <img src="images/beyaz_Kritik_yayınlari.png" alt="Kritik Yayınları Logo" class="h-24 w-auto">
+                    </a>
+                </div>
+                <p class="text-gray-400 mb-4">Edebiyatın dünyasını en seçkin eserlerle okuyucularla buluşturuyoruz...</p>
+                <div class="flex space-x-4 mt-4">
+                    <a href="#" class="text-gray-400 hover:text-primary transition">
+                        <i class="ri-facebook-fill"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition">
+                        <i class="ri-twitter-fill"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-primary transition">
+                        <i class="ri-youtube-fill"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div>
+                <h4 class="text-lg font-semibold mb-4 text-primary">Hızlı Bağlantılar</h4>
+                <ul class="space-y-2">
+                    <li><a href="anasayfa.html" class="text-gray-400 hover:text-primary transition">Ana Sayfa</a></li>
+                    <li><a href="kitaplar.html" class="text-gray-400 hover:text-primary transition">Kitaplar</a></li>
+                    <li><a href="yazarlar.html" class="text-gray-400 hover:text-primary transition">Yazarlar</a></li>
+                    <li><a href="hakkimizda.html" class="text-gray-400 hover:text-primary transition">Hakkımızda</a></li>
+                    <li><a href="iletisim.html" class="text-gray-400 hover:text-primary transition">İletişim</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4 class="text-lg font-semibold mb-4 text-primary">İletişim Bilgileri</h4>
+                <address class="not-italic text-gray-400">
+                    <p class="mb-2">Bağdat Caddesi No:123, Kadıköy, İstanbul</p>
+                    <p class="mb-2">+90 212 345 67 89</p>
+                    <p>info@kritikyayinlari.com</p>
+                </address>
+            </div>
+        </div>
+        
+        <div class="border-t border-gray-800 mt-8 pt-4 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
+                <p>&copy; 2025 Kritik Yayınları. Tüm hakları saklıdır.</p>
+            <div class="flex space-x-4 mt-2 md:mt-0">
+                <a href="#" class="hover:text-primary">Gizlilik Politikası</a>
+                <a href="#" class="hover:text-primary">Kullanım Koşulları</a>
+                <a href="#" class="hover:text-primary">Çerez Politikası</a>
+            </div>
+            </div>
+        </div>
+    </footer>
+
+<!-- Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Supabase Config -->
+<script src="js/supabase-config.js"></script>
+<!-- Supabase API -->
+<script src="js/supabase-api.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobil Menü Toggle
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+            
+            if (mobileMenuToggle && mobileMenu) {
+                mobileMenuToggle.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+            
+            // Yazarları yükle
+            loadAuthors();
+        });
+        
+        // Yazarları yükle ve göster
+    document.addEventListener('DOMContentLoaded', async function() {
+            // Banner'ları yükle
+            if (typeof loadPageBanners === 'function') {
+                await loadPageBanners('authors');
+            }
+            
+            loadAuthorsPage();
+            
+            // Alfabe filtreleme
+            document.querySelectorAll('.alphabet-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const letter = this.getAttribute('data-letter');
+                    filterAuthorsByLetter(letter);
+                    
+                    // Aktif butonu güncelle
+                document.querySelectorAll('.alphabet-btn').forEach(b => {
+                    b.classList.remove('active', 'text-primary', 'font-medium');
+                    b.classList.add('text-gray-600');
+                });
+                this.classList.add('active', 'text-primary', 'font-medium');
+                this.classList.remove('text-gray-600');
+            });
+        });
+
+        // Arama işlevi kaldırıldı
+
+        // Arama alanı olayı
+        const authorSearch = document.getElementById('authorSearch');
+        if (authorSearch) {
+            authorSearch.addEventListener('input', function() {
+                const searchText = this.value.toLowerCase();
+                filterAuthorsByName(searchText);
+            });
+        }
+    });
+        
+        async function loadAuthorsPage() {
+            const authorsGrid = document.querySelector('.authors-grid');
+            if (!authorsGrid) return;
+            
+            try {
+                // Yükleniyor göstergesini göster
+                authorsGrid.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-3"></div>
+                        <p class="text-gray-500">Yükleniyor...</p>
+                    </div>
+                `;
+                
+                // Supabase'den yazarları getir
+            if (window.supabaseClient) {
+                const { data, error } = await window.supabaseClient
+                    .from('authors')
+                    .select('*, books(id)')
+                    .order('name');
+                    
+                if (error) throw error;
+                    
+                    // Veri yoksa boş mesaj göster
+                    if (!data || data.length === 0) {
+                authorsGrid.innerHTML = `
+                    <div class="col-span-full flex flex-col items-center justify-center py-12 text-gray-500">
+                        <i class="ri-user-3-line text-5xl mb-4 text-gray-300"></i>
+                        <p class="text-lg font-medium mb-2">Henüz yazar eklenmemiş</p>
+                    </div>
+                `;
+                    return;
+                }
+                
+                    // Yazarları göster
+                    displayAuthors(data);
+                } else {
+                    // Supabase bağlantısı yoksa hata göster
+                    throw new Error('Veritabanı bağlantısı kurulamadı');
+                }
+            } catch (error) {
+                console.error('Yazarlar yüklenirken hata oluştu:', error);
+            authorsGrid.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-12 text-red-500">
+                    <i class="ri-error-warning-line text-5xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">Yazarlar yüklenirken bir hata oluştu</p>
+                </div>
+            `;
+        }
+        }
+        
+        function displayAuthors(authors) {
+            const authorsGrid = document.querySelector('.authors-grid');
+            if (!authorsGrid) return;
+            
+            authorsGrid.innerHTML = authors.map(author => {
+                // Kitap sayısını güvenli şekilde hesapla
+                let kitapSayisi = 0;
+                if (author.books) {
+                    if (Array.isArray(author.books)) {
+                        kitapSayisi = author.books.length;
+                    } else if (typeof author.books === 'number') {
+                        kitapSayisi = author.books;
+                    }
+                }
+                
+                return `
+            <div class="author-card bg-white rounded-lg shadow-md overflow-hidden group hover:shadow-xl transition-shadow relative" data-letter="${author.name[0].toLowerCase()}">
+                <div class="relative overflow-hidden">
+                        <img src="${author.photo_url || 'images/placeholder.png'}" 
+                             alt="${author.name}" 
+                             onerror="this.src='images/placeholder.png'"
+                         class="w-full h-80 object-cover transition-transform duration-500 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-4">
+                        <a href="yazar-detay.html?id=${author.id}" class="bg-primary text-white px-4 py-2 rounded-full font-medium hover:bg-opacity-90 transition mb-4">
+                            Biyografi
+                        </a>
+                    </div>
+                </div>
+                <div class="p-4 text-center">
+                    <h3 class="text-lg font-semibold text-secondary mb-1">${author.name}</h3>
+                        <p class="text-sm text-primary font-medium">${kitapSayisi} Kitap</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterAuthorsByLetter(letter) {
+            const authorCards = document.querySelectorAll('.author-card');
+            
+            authorCards.forEach(card => {
+                if (letter === 'all') {
+                card.classList.remove('hidden');
+                } else {
+                    const cardLetter = card.getAttribute('data-letter');
+                    if (cardLetter === letter || 
+                        (letter === 'i' && cardLetter === 'ı') ||
+                        (letter === 'ı' && cardLetter === 'i') ||
+                        (letter === 'u' && cardLetter === 'ü') ||
+                        (letter === 'ü' && cardLetter === 'u') ||
+                        (letter === 'o' && cardLetter === 'ö') ||
+                    (letter === 'ö' && cardLetter === 'o')) {
+                    card.classList.remove('hidden');
+                    } else {
+                    card.classList.add('hidden');
+                }
+            }
+        });
+    }
+    
+    function filterAuthorsByName(searchText) {
+        const authorCards = document.querySelectorAll('.author-card');
+        
+        authorCards.forEach(card => {
+            const authorName = card.querySelector('h3').textContent.toLowerCase();
+            if (authorName.includes(searchText)) {
+                card.classList.remove('hidden');
+            } else {
+                card.classList.add('hidden');
+                }
+            });
+        }
+
+    // Sayfa yüklendiğinde çalışacak script
+    document.addEventListener('DOMContentLoaded', function() {
+        // Supabase bağlantısını kontrol et
+        if (!window.supabaseClient) {
+            console.error('Supabase bağlantısı bulunamadı');
+            return;
+        }
+        
+        // URL parametrelerini al
+        const urlParams = new URLSearchParams(window.location.search);
+        const yazarId = urlParams.get('yazar_id');
+        
+        // Eğer yazar_id parametresi varsa, sadece o yazarın kitaplarını göster
+        if (yazarId) {
+            loadSpecificAuthor(yazarId);
+        } else {
+            // Tüm yazarları yükle
+            loadAllAuthors();
+        }
+    });
+
+    // Belirli bir yazarı ve kitaplarını yükle
+    async function loadSpecificAuthor(yazarId) {
+        try {
+            // Yazar bilgilerini getir
+            const { data: yazar, error: yazarError } = await window.supabaseClient
+                .from('authors')
+                .select('*')
+                .eq('id', yazarId)
+                .single();
+                
+            if (yazarError || !yazar) {
+                console.error('Yazar bulunamadı:', yazarError);
+                document.getElementById('authorsList').innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-red-500 text-5xl mb-4">
+                            <i class="ri-error-warning-line"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-700 mb-2">Yazar Bulunamadı</h3>
+                        <p class="text-gray-500">İstediğiniz yazar bulunamadı veya bir hata oluştu.</p>
+                        <a href="yazarlar.html" class="inline-block mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-yellow-600 transition-colors">
+                            Tüm Yazarları Görüntüle
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Yazarın kitaplarını getir
+            const { data: kitaplar, error: kitaplarError } = await window.supabaseClient
+                .from('books')
+                .select('*')
+                .eq('author_id', yazarId);
+                
+            if (kitaplarError) {
+                console.error('Kitaplar yüklenirken hata oluştu:', kitaplarError);
+            }
+            
+            // Sayfa başlığını güncelle
+            document.title = `${yazar.name} - Kritik Yayınları`;
+            
+            // Sayfaya yazar detaylarını ekle
+            const pageHeader = document.querySelector('h1.text-3xl');
+            if (pageHeader) {
+                pageHeader.textContent = yazar.name;
+            }
+            
+            // Yazar profilini göster
+            const authorsListContainer = document.getElementById('authorsList');
+            if (authorsListContainer) {
+                authorsListContainer.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+                        <div class="p-6 flex flex-col md:flex-row">
+                            <div class="md:w-1/4 mb-4 md:mb-0">
+                                <img src="${yazar.image_url || 'images/placeholder-author.jpg'}" alt="${yazar.name}" 
+                                     class="w-48 h-48 object-cover rounded-lg mx-auto">
+                            </div>
+                            <div class="md:w-3/4 md:pl-6">
+                                <h2 class="text-2xl font-bold text-gray-800 mb-2">${yazar.name}</h2>
+                                <div class="prose max-w-none text-gray-600 mb-4">
+                                    ${yazar.biography || 'Yazar biyografisi mevcut değil.'}
+                                </div>
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    ${yazar.areas ? yazar.areas.split(',').map(area => 
+                                        `<span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">${area.trim()}</span>`
+                                    ).join('') : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Yazarın Kitapları</h2>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="authorBooks">
+                        ${kitaplar && kitaplar.length > 0 ? kitaplar.map(kitap => `
+                            <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                                <a href="kitap-detay.html?kitap_id=${kitap.id}" class="block">
+                                    <div class="aspect-[3/4] overflow-hidden bg-gray-100">
+                                        <img src="${kitap.cover_image || 'images/placeholder-book.jpg'}" alt="${kitap.title}" 
+                                             class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-lg text-gray-800 mb-1">${kitap.title}</h3>
+                                        <p class="text-gray-500 text-sm mb-2">${yazar.name}</p>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-primary font-bold">${kitap.price ? `${kitap.price} TL` : ''}</span>
+                                            <button class="bg-primary hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">
+                                                İncele
+                                            </button>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        `).join('') : `
+                            <div class="col-span-full text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
+                                <div class="text-gray-400 text-5xl mb-4">
+                                    <i class="ri-book-line"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-500 mb-2">Henüz Kitap Bulunmuyor</h3>
+                                <p class="text-gray-400">Bu yazara ait kitap bulunamadı.</p>
+                            </div>
+                        `}
+                    </div>
+                    
+                    <div class="mt-8 text-center">
+                        <a href="yazarlar.html" class="inline-block px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            <i class="ri-arrow-left-line mr-1"></i>
+                            Tüm Yazarları Görüntüle
+                        </a>
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            console.error('Yazar yüklenirken hata:', error);
+            document.getElementById('authorsList').innerHTML = `
+                <div class="text-center py-12">
+                    <div class="text-red-500 text-5xl mb-4">
+                        <i class="ri-error-warning-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-700 mb-2">Bir Hata Oluştu</h3>
+                    <p class="text-gray-500">Yazar bilgileri yüklenirken bir hata oluştu.</p>
+                    <a href="yazarlar.html" class="inline-block mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-yellow-600 transition-colors">
+                        Tüm Yazarları Görüntüle
+                    </a>
+                </div>
+            `;
+        }
+    }
+    </script>
+</body>
+</html>

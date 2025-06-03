@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kritik Yayınları - Kitap ve Yazar Tanıtım Sitesi</title>
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>tailwind.config={theme:{extend:{colors:{primary:'#d4af37',secondary:'#1a1a1a',success:'#10B981',error:'#EF4444'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+<style>
+:where([class^="ri-"])::before { content: "\f3c2"; }
+body {
+font-family: 'Inter', sans-serif;
+}
+.book-number {
+font-size: 6rem;
+font-weight: 200;
+opacity: 0.2;
+position: absolute;
+top: -20px;
+left: -10px;
+}
+</style>
+</head>
+<body class="bg-white min-h-screen">
+<div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+<div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-2xl font-bold text-secondary">Admin Girişi</h2>
+<button class="text-gray-500 hover:text-gray-700" onclick="toggleLoginModal()">
+<i class="ri-close-line ri-lg"></i>
+</button>
+</div>
+<form id="loginForm" action="https://readdy.ai/api/form/d0nia728u1tsk3mp3l60" method="POST" class="space-y-4">
+<div>
+<label class="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
+<div class="relative">
+<i class="ri-mail-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+<input type="email" name="email" required maxlength="500" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary" placeholder="admin@kritikyayinlari.com">
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+<div class="relative">
+<i class="ri-lock-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+<input type="password" name="password" required maxlength="500" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary" placeholder="••••••••">
+</div>
+</div>
+<button type="submit" class="w-full bg-primary text-white py-2 !rounded-button font-medium hover:bg-opacity-90 transition">Giriş Yap</button>
+</form>
+<div id="loginMessage" class="mt-4 text-center hidden">
+<p class="text-sm font-medium"></p>
+</div>
+</div>
+</div>
+<header class="w-full bg-white shadow-sm">
+<div class="container mx-auto px-4 py-4 flex justify-between items-center">
+<div>
+<a href="#" class="text-primary font-['Pacifico'] text-2xl">Kritik</a>
+</div>
+<nav class="hidden md:flex space-x-8">
+<a href="#" class="text-secondary hover:text-primary font-medium">Ana Sayfa</a>
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/82a6218d-7835-4001-ae2b-962763b29f01" data-readdy="true" class="text-secondary hover:text-primary font-medium">Hakkımızda</a>
+<a href="#" class="text-secondary hover:text-primary font-medium">Kitaplar</a>
+<a href="#" class="text-secondary hover:text-primary font-medium">Yazarlar</a>
+<a href="#" class="text-secondary hover:text-primary font-medium">İletişim</a>
+</nav>
+<div class="flex items-center space-x-4">
+<button onclick="toggleLoginModal()" class="flex items-center space-x-1 text-secondary hover:text-primary mr-4">
+<i class="ri-admin-line"></i>
+<span class="text-sm">Admin</span>
+</button>
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-search-line ri-lg"></i>
+</a>
+<div class="relative" id="languageSelector">
+<button class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary" id="languageButton">
+<i class="ri-global-line ri-lg"></i>
+</button>
+<div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50" id="languageDropdown">
+<a href="#" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 active" data-lang="tr">
+<i class="ri-flag-line ri-lg mr-2"></i>
+<span>Türkçe</span>
+<i class="ri-check-line ri-lg ml-auto text-primary"></i>
+</a>
+<a href="#" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50" data-lang="en">
+<i class="ri-flag-2-line ri-lg mr-2"></i>
+<span>English</span>
+</a>
+<a href="#" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50" data-lang="pt">
+<i class="ri-flag-line ri-lg mr-2"></i>
+<span>Português</span>
+</a>
+</div>
+</div>
+<button class="block md:hidden w-8 h-8 flex items-center justify-center text-secondary">
+<i class="ri-menu-line ri-lg"></i>
+</button>
+</div>
+</div>
+</header>
+<main>
+<!-- Hero Slider Section -->
+<section class="relative py-16 md:py-24 bg-gradient-to-r from-white to-gray-50 overflow-hidden">
+<div class="container mx-auto px-4">
+<div class="relative">
+<div class="flex transition-transform duration-500 ease-in-out" id="heroSlider">
+<!-- Slide 1 -->
+<div class="min-w-full">
+<div class="flex flex-col md:flex-row items-center">
+<div class="md:w-1/2 mb-10 md:mb-0">
+<h1 class="text-4xl md:text-5xl font-bold text-secondary mb-6">Kelimelerin Dünyasına Hoş Geldiniz</h1>
+<p class="text-gray-600 mb-8 text-lg">Kritik Yayınları olarak, edebiyat dünyasının en seçkin eserlerini okuyucularla buluşturuyoruz.</p>
+<div class="flex flex-wrap gap-4">
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/fe7eab60-4fd8-475b-b133-1e8501b87ba6" data-readdy="true" class="bg-primary text-white px-6 py-3 !rounded-button font-medium hover:bg-opacity-90 transition whitespace-nowrap inline-block">Kitapları Keşfet</a>
+<button class="border border-secondary text-secondary px-6 py-3 !rounded-button font-medium hover:bg-secondary hover:text-white transition whitespace-nowrap">Yazarlarımız</button>
+</div>
+</div>
+<div class="md:w-1/2 flex justify-center">
+<img src="https://readdy.ai/api/search-image?query=elegant%20bookstore%20interior%20with%20warm%20lighting%2C%20bookshelves%20filled%20with%20books%2C%20modern%20and%20inviting%20atmosphere&width=600&height=400&seq=131&orientation=landscape" alt="Kitap Koleksiyonu" class="rounded-lg shadow-lg object-cover object-top w-full max-w-lg">
+</div>
+</div>
+</div>
+<!-- Slide 2 -->
+<div class="min-w-full">
+<div class="flex flex-col md:flex-row items-center">
+<div class="md:w-1/2 mb-10 md:mb-0">
+<h1 class="text-4xl md:text-5xl font-bold text-secondary mb-6">Yeni Çıkan Kitaplarımız</h1>
+<p class="text-gray-600 mb-8 text-lg">Her ay yeni yazarlar ve eserlerle kütüphanenizi zenginleştirin. En yeni kitapları keşfedin.</p>
+<div class="flex flex-wrap gap-4">
+<button class="bg-primary text-white px-6 py-3 !rounded-button font-medium hover:bg-opacity-90 transition whitespace-nowrap">Yeni Çıkanlar</button>
+<button class="border border-secondary text-secondary px-6 py-3 !rounded-button font-medium hover:bg-secondary hover:text-white transition whitespace-nowrap">Tüm Katalog</button>
+</div>
+</div>
+<div class="md:w-1/2 flex justify-center">
+<img src="https://readdy.ai/api/search-image?query=modern%20library%20with%20new%20books%20display%2C%20contemporary%20design%2C%20bright%20and%20welcoming%20space&width=600&height=400&seq=132&orientation=landscape" alt="Yeni Kitaplar" class="rounded-lg shadow-lg object-cover object-top w-full max-w-lg">
+</div>
+</div>
+</div>
+<!-- Slide 3 -->
+<div class="min-w-full">
+<div class="flex flex-col md:flex-row items-center">
+<div class="md:w-1/2 mb-10 md:mb-0">
+<h1 class="text-4xl md:text-5xl font-bold text-secondary mb-6">Yazar Buluşmaları</h1>
+<p class="text-gray-600 mb-8 text-lg">Sevdiğiniz yazarlarla tanışın, imza günlerimize katılın ve edebiyat söyleşilerini kaçırmayın.</p>
+<div class="flex flex-wrap gap-4">
+<button class="bg-primary text-white px-6 py-3 !rounded-button font-medium hover:bg-opacity-90 transition whitespace-nowrap">Etkinlikler</button>
+<button class="border border-secondary text-secondary px-6 py-3 !rounded-button font-medium hover:bg-secondary hover:text-white transition whitespace-nowrap">Takvim</button>
+</div>
+</div>
+<div class="md:w-1/2 flex justify-center">
+<img src="https://readdy.ai/api/search-image?query=book%20signing%20event%2C%20author%20meeting%20readers%2C%20warm%20and%20welcoming%20bookstore%20atmosphere&width=600&height=400&seq=133&orientation=landscape" alt="Yazar Buluşmaları" class="rounded-lg shadow-lg object-cover object-top w-full max-w-lg">
+</div>
+</div>
+</div>
+</div>
+<!-- Slider Navigation -->
+<button class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white/80 hover:bg-white rounded-full text-secondary transition shadow-lg" id="heroPrevBtn">
+<i class="ri-arrow-left-s-line ri-2x"></i>
+</button>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white/80 hover:bg-white rounded-full text-secondary transition shadow-lg" id="heroNextBtn">
+<i class="ri-arrow-right-s-line ri-2x"></i>
+</button>
+<!-- Slider Indicators -->
+<div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2" id="heroIndicators">
+<button class="w-2 h-2 rounded-full bg-secondary/30 transition" data-slide="0"></button>
+<button class="w-2 h-2 rounded-full bg-secondary/30 transition" data-slide="1"></button>
+<button class="w-2 h-2 rounded-full bg-secondary/30 transition" data-slide="2"></button>
+</div>
+</div>
+</div>
+</section>
+<script id="heroSliderScript">
+document.addEventListener('DOMContentLoaded', function() {
+const slider = document.getElementById('heroSlider');
+const slides = slider.children;
+const prevBtn = document.getElementById('heroPrevBtn');
+const nextBtn = document.getElementById('heroNextBtn');
+const indicators = document.getElementById('heroIndicators').children;
+let currentSlide = 0;
+function updateSlider() {
+slider.style.transform = `translateX(-${currentSlide * 100}%)`;
+Array.from(indicators).forEach((indicator, index) => {
+indicator.classList.toggle('bg-secondary', index === currentSlide);
+indicator.classList.toggle('bg-secondary/30', index !== currentSlide);
+});
+}
+function nextSlide() {
+currentSlide = (currentSlide + 1) % slides.length;
+updateSlider();
+}
+function prevSlide() {
+currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+updateSlider();
+}
+prevBtn.addEventListener('click', prevSlide);
+nextBtn.addEventListener('click', nextSlide);
+Array.from(indicators).forEach((indicator, index) => {
+indicator.addEventListener('click', () => {
+currentSlide = index;
+updateSlider();
+});
+});
+updateSlider();
+let autoSlideInterval = setInterval(nextSlide, 5000);
+slider.addEventListener('mouseenter', () => {
+clearInterval(autoSlideInterval);
+});
+slider.addEventListener('mouseleave', () => {
+autoSlideInterval = setInterval(nextSlide, 5000);
+});
+});
+</script>
+<!-- Top Selling Books Section -->
+<section class="py-16 px-4 bg-white">
+<div class="container mx-auto">
+<h2 class="text-3xl font-bold text-secondary mb-12 text-center">Öne Çıkan Kitaplar</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+<!-- Book 1 -->
+<div class="relative bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="book-number text-primary">1</div>
+<div class="flex flex-col items-center">
+<img src="https://readdy.ai/api/search-image?query=book%20cover%20with%20red%20bird%20on%20white%20background%2C%20minimalist%20design%2C%20professional%20book%20cover%20for%20meditation%20book%2C%20elegant%20and%20simple%20design&width=200&height=300&seq=124&orientation=portrait" alt="Meditações" class="w-48 h-64 object-cover object-top mb-6 rounded shadow">
+<h3 class="text-xl font-bold text-secondary">Meditasyonlar</h3>
+<p class="text-gray-600 mb-2">Marcus Aurelius</p>
+<a href="#" class="mt-4 bg-secondary text-white px-4 py-2 !rounded-button font-medium hover:bg-primary transition whitespace-nowrap w-full text-center">Detaylar</a>
+</div>
+</div>
+<!-- Book 2 -->
+<div class="relative bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="book-number text-primary">2</div>
+<div class="flex flex-col items-center">
+<img src="https://readdy.ai/api/search-image?query=book%20cover%20with%20blue%20background%20and%20gold%20text%2C%20professional%20book%20cover%20for%20Dale%20Carnegies%20How%20to%20Win%20Friends%20and%20Influence%20People%2C%20elegant%20and%20professional%20design&width=200&height=300&seq=125&orientation=portrait" alt="Como fazer amigos e influenciar pessoas" class="w-48 h-64 object-cover object-top mb-6 rounded shadow">
+<h3 class="text-xl font-bold text-secondary">Dost Kazanma ve İnsanları Etkileme Sanatı</h3>
+<p class="text-gray-600 mb-2">Dale Carnegie</p>
+<a href="#" class="mt-4 bg-secondary text-white px-4 py-2 !rounded-button font-medium hover:bg-primary transition whitespace-nowrap w-full text-center">Detaylar</a>
+</div>
+</div>
+<!-- Book 3 -->
+<div class="relative bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="book-number text-primary">3</div>
+<div class="flex flex-col items-center">
+<img src="https://readdy.ai/api/search-image?query=book%20cover%20with%20cherry%20blossom%20design%2C%20professional%20book%20cover%20for%20a%20philosophical%20book%20about%20life%20and%20death%2C%20elegant%20and%20meaningful%20design%20with%20pink%20flowers&width=200&height=300&seq=126&orientation=portrait" alt="A morte é um dia que vale a pena viver" class="w-48 h-64 object-cover object-top mb-6 rounded shadow">
+<h3 class="text-xl font-bold text-secondary">Ölüm Yaşamaya Değer Bir Gündür</h3>
+<p class="text-gray-600 mb-2">Ana Cláudia Quintana Arantes</p>
+<a href="#" class="mt-4 bg-secondary text-white px-4 py-2 !rounded-button font-medium hover:bg-primary transition whitespace-nowrap w-full text-center">Detaylar</a>
+</div>
+</div>
+</div>
+<div class="text-center mt-12">
+<button class="border border-secondary text-secondary px-6 py-3 !rounded-button font-medium hover:bg-secondary hover:text-white transition whitespace-nowrap">Tüm Kitapları Gör</button>
+</div>
+</div>
+</section>
+<!-- Featured Authors Section -->
+<section class="py-16 px-4 bg-gray-50">
+<div class="container mx-auto">
+<h2 class="text-3xl font-bold text-secondary mb-12 text-center">Öne Çıkan Yazarlarımız</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+<!-- Author 1 -->
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md flex flex-col items-center">
+<div class="w-32 h-32 rounded-full overflow-hidden mb-4">
+<img src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20a%20middle-aged%20male%20author%20with%20glasses%2C%20thoughtful%20expression%2C%20neutral%20background%2C%20high%20quality%20professional%20headshot&width=200&height=200&seq=127&orientation=squarish" alt="Marco Aurélio" class="w-full h-full object-cover object-top">
+</div>
+<h3 class="text-xl font-bold text-secondary">Marco Aurélio</h3>
+<p class="text-gray-600 text-center mt-2 mb-4">Roma İmparatoru ve Stoacı filozof olarak tanınan, düşünceleriyle nesilleri etkilemiştir.</p>
+<a href="#" class="text-primary hover:underline">Kitaplarını Gör</a>
+</div>
+<!-- Author 2 -->
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md flex flex-col items-center">
+<div class="w-32 h-32 rounded-full overflow-hidden mb-4">
+<img src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20Dale%20Carnegie%2C%20historical%20figure%2C%20business%20author%2C%20neutral%20background%2C%20high%20quality%20professional%20headshot&width=200&height=200&seq=128&orientation=squarish" alt="Dale Carnegie" class="w-full h-full object-cover object-top">
+</div>
+<h3 class="text-xl font-bold text-secondary">Dale Carnegie</h3>
+<p class="text-gray-600 text-center mt-2 mb-4">İnsan ilişkileri ve kişisel gelişim alanında dünya çapında tanınan yazar ve eğitmen.</p>
+<a href="#" class="text-primary hover:underline">Kitaplarını Gör</a>
+</div>
+<!-- Author 3 -->
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md flex flex-col items-center">
+<div class="w-32 h-32 rounded-full overflow-hidden mb-4">
+<img src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20a%20female%20author%20with%20warm%20smile%2C%20thoughtful%20expression%2C%20neutral%20background%2C%20high%20quality%20professional%20headshot&width=200&height=200&seq=129&orientation=squarish" alt="Ana Cláudia Quintana Arantes" class="w-full h-full object-cover object-top">
+</div>
+<h3 class="text-xl font-bold text-secondary">Ana Cláudia Quintana</h3>
+<p class="text-gray-600 text-center mt-2 mb-4">Yaşam ve ölüm üzerine derin düşünceleriyle tanınan çağdaş yazar ve düşünür.</p>
+<a href="#" class="text-primary hover:underline">Kitaplarını Gör</a>
+</div>
+<!-- Author 4 -->
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md flex flex-col items-center">
+<div class="w-32 h-32 rounded-full overflow-hidden mb-4">
+<img src="https://readdy.ai/api/search-image?query=professional%20portrait%20of%20a%20male%20author%20with%20beard%2C%20thoughtful%20expression%2C%20neutral%20background%2C%20high%20quality%20professional%20headshot&width=200&height=200&seq=130&orientation=squarish" alt="Ahmet Hamdi Tanpınar" class="w-full h-full object-cover object-top">
+</div>
+<h3 class="text-xl font-bold text-secondary">Ahmet Hamdi Tanpınar</h3>
+<p class="text-gray-600 text-center mt-2 mb-4">Türk edebiyatının önemli isimlerinden, şair, romancı ve edebiyat tarihçisi.</p>
+<a href="#" class="text-primary hover:underline">Kitaplarını Gör</a>
+</div>
+</div>
+</div>
+</section>
+<!-- Slider Section -->
+<section class="py-16 px-4 bg-secondary overflow-hidden">
+<div class="container mx-auto">
+<div class="relative">
+<div class="flex transition-transform duration-500 ease-in-out" id="slider">
+<!-- Slide 1: Text Based -->
+<div class="min-w-full p-8 text-white flex items-center justify-center min-h-[400px]">
+<div class="max-w-2xl mx-auto text-center">
+<span class="text-primary text-sm font-medium mb-2 block">Yeni Çıkan</span>
+<h2 class="text-4xl font-bold mb-6">Edebiyat Dünyasının Yeni Keşfi</h2>
+<p class="mb-8 text-lg">Kritik Yayınları'nın en yeni kitaplarını keşfedin. Her ay yeni yazarlar ve eserlerle kütüphanenizi zenginleştirin.</p>
+<button class="bg-primary text-white px-8 py-4 !rounded-button font-medium hover:bg-opacity-90 transition whitespace-nowrap">Detaylı Bilgi</button>
+</div>
+</div>
+<!-- Slide 2: Newsletter -->
+<div class="min-w-full p-8 text-white flex items-center justify-center min-h-[400px]">
+<div class="max-w-2xl mx-auto text-center">
+<h2 class="text-3xl font-bold mb-6">Yeni Yayınlardan Haberdar Olun</h2>
+<p class="mb-8 text-lg">Yeni çıkan kitaplar, yazar söyleşileri ve özel indirimlerden haberdar olmak için bültenimize abone olun.</p>
+<div class="flex flex-col sm:flex-row gap-4 justify-center">
+<input type="email" placeholder="E-posta adresiniz" class="px-4 py-3 !rounded-button focus:outline-none text-secondary w-full sm:w-auto border-none">
+<button class="bg-primary text-white px-6 py-3 !rounded-button font-medium hover:bg-opacity-90 transition whitespace-nowrap">Abone Ol</button>
+</div>
+</div>
+</div>
+<!-- Slide 3: Info Cards -->
+<div class="min-w-full p-8 flex items-center justify-center min-h-[400px]">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto w-full">
+<div class="bg-white p-6 rounded-lg text-secondary">
+<i class="ri-book-open-line ri-2x mb-4 text-primary"></i>
+<h3 class="text-xl font-bold mb-2">200+ Kitap</h3>
+<p class="text-gray-600">Geniş kitap koleksiyonumuzla her zevke hitap ediyoruz</p>
+</div>
+<div class="bg-white p-6 rounded-lg text-secondary">
+<i class="ri-user-star-line ri-2x mb-4 text-primary"></i>
+<h3 class="text-xl font-bold mb-2">50+ Yazar</h3>
+<p class="text-gray-600">Alanında uzman yazarlarla çalışıyoruz</p>
+</div>
+<div class="bg-white p-6 rounded-lg text-secondary">
+<i class="ri-award-line ri-2x mb-4 text-primary"></i>
+<h3 class="text-xl font-bold mb-2">15+ Ödül</h3>
+<p class="text-gray-600">Yayıncılık alanında kazandığımız ödüller</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Navigation Buttons -->
+<button class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white transition" id="prevBtn">
+<i class="ri-arrow-left-s-line ri-2x"></i>
+</button>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full text-white transition" id="nextBtn">
+<i class="ri-arrow-right-s-line ri-2x"></i>
+</button>
+<!-- Slide Indicators -->
+<div class="flex justify-center mt-8 gap-2" id="indicators">
+<button class="w-3 h-3 rounded-full bg-white/30 transition" data-slide="0"></button>
+<button class="w-3 h-3 rounded-full bg-white/30 transition" data-slide="1"></button>
+<button class="w-3 h-3 rounded-full bg-white/30 transition" data-slide="2"></button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<footer class="bg-white border-t border-gray-200 py-12">
+<div class="container mx-auto px-4">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+<div class="md:col-span-1">
+<a href="#" class="text-primary font-['Pacifico'] text-2xl">Kritik</a>
+<p class="text-gray-600 mt-4">Edebiyat dünyasının en seçkin eserlerini okuyucularla buluşturan yayınevi.</p>
+<div class="flex space-x-4 mt-6">
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-facebook-fill ri-lg"></i>
+</a>
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-twitter-fill ri-lg"></i>
+</a>
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-instagram-fill ri-lg"></i>
+</a>
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-youtube-fill ri-lg"></i>
+</a>
+</div>
+<button onclick="toggleLoginModal()" class="flex items-center space-x-1 text-secondary hover:text-primary mt-6">
+<i class="ri-admin-line"></i>
+<span class="text-sm">Admin</span>
+</button>
+</div>
+<div class="md:col-span-2 grid grid-cols-2 gap-8">
+<div>
+<h3 class="text-lg font-bold text-secondary mb-4">Hızlı Erişim</h3>
+<ul class="space-y-2">
+<li><a href="#" class="text-gray-600 hover:text-primary">Ana Sayfa</a></li>
+<li><a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/82a6218d-7835-4001-ae2b-962763b29f01" data-readdy="true" class="text-gray-600 hover:text-primary">Hakkımızda</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Kitaplar</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Yazarlar</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">İletişim</a></li>
+</ul>
+<h3 class="text-lg font-bold text-secondary mb-4 mt-8">Kategoriler</h3>
+<ul class="space-y-2">
+<li><a href="#" class="text-gray-600 hover:text-primary">Edebiyat</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Felsefe</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Tarih</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Kişisel Gelişim</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Bilim</a></li>
+</ul>
+</div>
+<div>
+<h3 class="text-lg font-bold text-secondary mb-4">İletişim</h3>
+<ul class="space-y-4">
+<li class="flex items-start">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-3">
+<i class="ri-map-pin-line"></i>
+</div>
+<span class="text-gray-600">Bağdat Caddesi No:123, Kadıköy, İstanbul</span>
+</li>
+<li class="flex items-start">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-3">
+<i class="ri-phone-line"></i>
+</div>
+<span class="text-gray-600">+90 212 345 67 89</span>
+</li>
+<li class="flex items-start">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-3">
+<i class="ri-mail-line"></i>
+</div>
+<span class="text-gray-600">info@kritikyayinlari.com</span>
+</li>
+</ul>
+<div class="mt-8">
+<h3 class="text-lg font-bold text-secondary mb-4">Çalışma Saatleri</h3>
+<p class="text-gray-600">Pazartesi - Cumartesi: 09:00 - 18:00</p>
+<p class="text-gray-600">Pazar: Kapalı</p>
+</div>
+</div>
+</div>
+<div class="md:col-span-1">
+<div class="bg-gray-50 p-6 rounded-lg">
+<h3 class="text-lg font-bold text-secondary mb-4">Bültenimize Katılın</h3>
+<p class="text-gray-600 mb-4">Yeni çıkan kitaplar ve etkinliklerden haberdar olun.</p>
+<form class="space-y-3">
+<input type="email" placeholder="E-posta adresiniz" class="w-full px-4 py-2 border-none !rounded-button text-sm">
+<button type="submit" class="w-full bg-primary text-white py-2 !rounded-button text-sm font-medium hover:bg-opacity-90 transition whitespace-nowrap">Abone Ol</button>
+</form>
+</div>
+</div>
+</div>
+<div class="mt-12 pt-8 border-t border-gray-200">
+<div class="flex flex-col md:flex-row justify-between items-center">
+<p class="text-gray-600 text-sm">&copy; 2025 Kritik Yayınları. Tüm hakları saklıdır.</p>
+<div class="flex items-center space-x-4 mt-4 md:mt-0">
+<a href="#" class="text-gray-600 hover:text-primary text-sm">Gizlilik Politikası</a>
+<span class="text-gray-300">|</span>
+<a href="#" class="text-gray-600 hover:text-primary text-sm">Kullanım Koşulları</a>
+<span class="text-gray-300">|</span>
+<a href="#" class="text-gray-600 hover:text-primary text-sm">KVKK</a>
+</div>
+</div>
+</div>
+</div>
+</footer>
+<script id="mobileMenuScript">
+document.addEventListener('DOMContentLoaded', function() {
+const menuButton = document.querySelector('button.block.md\\:hidden');
+const nav = document.querySelector('nav');
+const languageButton = document.getElementById('languageButton');
+const languageDropdown = document.getElementById('languageDropdown');
+const languageOptions = languageDropdown.querySelectorAll('a');
+menuButton.addEventListener('click', function() {
+if (nav.classList.contains('hidden')) {
+nav.classList.remove('hidden');
+nav.classList.add('flex', 'flex-col', 'absolute', 'top-16', 'right-0', 'bg-white', 'shadow-md', 'p-4', 'rounded', 'z-50', 'w-48');
+} else {
+nav.classList.add('hidden');
+nav.classList.remove('flex', 'flex-col', 'absolute', 'top-16', 'right-0', 'bg-white', 'shadow-md', 'p-4', 'rounded', 'z-50', 'w-48');
+}
+});
+languageButton.addEventListener('click', function(e) {
+e.preventDefault();
+languageDropdown.classList.toggle('hidden');
+});
+document.addEventListener('click', function(e) {
+if (!document.getElementById('languageSelector').contains(e.target)) {
+languageDropdown.classList.add('hidden');
+}
+});
+languageOptions.forEach(option => {
+option.addEventListener('click', function(e) {
+e.preventDefault();
+const lang = this.getAttribute('data-lang');
+languageOptions.forEach(opt => {
+opt.classList.remove('active');
+opt.querySelector('.ri-check-line')?.remove();
+});
+this.classList.add('active');
+this.insertAdjacentHTML('beforeend', '<i class="ri-check-line ri-lg ml-auto text-primary"></i>');
+languageDropdown.classList.add('hidden');
+});
+});
+});
+</script>
+<script id="sliderScript">
+document.addEventListener('DOMContentLoaded', function() {
+const slider = document.getElementById('slider');
+const slides = slider.children;
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const indicators = document.getElementById('indicators').children;
+let currentSlide = 0;
+function updateSlider() {
+slider.style.transform = `translateX(-${currentSlide * 100}%)`;
+Array.from(indicators).forEach((indicator, index) => {
+indicator.classList.toggle('bg-white', index === currentSlide);
+indicator.classList.toggle('bg-white/30', index !== currentSlide);
+});
+}
+function nextSlide() {
+currentSlide = (currentSlide + 1) % slides.length;
+updateSlider();
+}
+function prevSlide() {
+currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+updateSlider();
+}
+prevBtn.addEventListener('click', prevSlide);
+nextBtn.addEventListener('click', nextSlide);
+Array.from(indicators).forEach((indicator, index) => {
+indicator.addEventListener('click', () => {
+currentSlide = index;
+updateSlider();
+});
+});
+updateSlider();
+let autoSlideInterval = setInterval(nextSlide, 5000);
+slider.addEventListener('mouseenter', () => {
+clearInterval(autoSlideInterval);
+});
+slider.addEventListener('mouseleave', () => {
+autoSlideInterval = setInterval(nextSlide, 5000);
+});
+});
+</script>
+</script>
+<script id="adminLoginScript">
+document.addEventListener('DOMContentLoaded', function() {
+const loginForm = document.getElementById('loginForm');
+const loginMessage = document.getElementById('loginMessage');
+const messageText = loginMessage.querySelector('p');
+loginForm.addEventListener('submit', function(e) {
+e.preventDefault();
+const email = this.email.value;
+const password = this.password.value;
+if (!email || !password) {
+messageText.textContent = 'Lütfen tüm alanları doldurun!';
+messageText.className = 'text-sm font-medium text-error';
+loginMessage.classList.remove('hidden');
+return;
+}
+if (email.length > 500 || password.length > 500) {
+messageText.textContent = 'Girilen bilgiler çok uzun!';
+messageText.className = 'text-sm font-medium text-error';
+loginMessage.classList.remove('hidden');
+return;
+}
+const formData = new URLSearchParams();
+formData.append('email', email);
+formData.append('password', password);
+fetch(loginForm.action, {
+method: 'POST',
+headers: {
+'Content-Type': 'application/x-www-form-urlencoded',
+},
+body: formData
+})
+.then(response => {
+if (response.ok) {
+messageText.textContent = 'Giriş başarılı! Yönlendiriliyorsunuz...';
+messageText.className = 'text-sm font-medium text-success';
+loginMessage.classList.remove('hidden');
+setTimeout(() => {
+window.location.href = '/admin-panel.html';
+}, 1500);
+} else {
+throw new Error('Login failed');
+}
+})
+.catch(error => {
+messageText.textContent = 'Giriş başarısız. Lütfen tekrar deneyin.';
+messageText.className = 'text-sm font-medium text-error';
+loginMessage.classList.remove('hidden');
+});
+});
+});
+function toggleLoginModal() {
+const modal = document.getElementById('loginModal');
+const loginMessage = document.getElementById('loginMessage');
+const loginForm = document.getElementById('loginForm');
+if (modal.classList.contains('hidden')) {
+modal.classList.remove('hidden');
+modal.classList.add('flex');
+document.body.style.overflow = 'hidden';
+} else {
+modal.classList.add('hidden');
+modal.classList.remove('flex');
+document.body.style.overflow = '';
+loginMessage.classList.add('hidden');
+loginForm.reset();
+}
+}
+</script>
+</body>
+</html>

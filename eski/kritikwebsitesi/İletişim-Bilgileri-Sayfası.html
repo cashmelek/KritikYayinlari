@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>İletişim - Kritik Yayınları</title>
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>tailwind.config={theme:{extend:{colors:{primary:'#d4af37',secondary:'#1a1a1a'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+<style>
+:where([class^="ri-"])::before { content: "\f3c2"; }
+body {
+font-family: 'Inter', sans-serif;
+}
+.custom-checkbox {
+position: relative;
+padding-left: 30px;
+cursor: pointer;
+}
+.custom-checkbox input {
+position: absolute;
+opacity: 0;
+cursor: pointer;
+height: 0;
+width: 0;
+}
+.checkmark {
+position: absolute;
+top: 0;
+left: 0;
+height: 20px;
+width: 20px;
+background-color: #fff;
+border: 1px solid #d1d5db;
+border-radius: 4px;
+}
+.custom-checkbox:hover input ~ .checkmark {
+border-color: #d4af37;
+}
+.custom-checkbox input:checked ~ .checkmark {
+background-color: #d4af37;
+border-color: #d4af37;
+}
+.checkmark:after {
+content: "";
+position: absolute;
+display: none;
+}
+.custom-checkbox input:checked ~ .checkmark:after {
+display: block;
+}
+.custom-checkbox .checkmark:after {
+left: 7px;
+top: 3px;
+width: 6px;
+height: 10px;
+border: solid white;
+border-width: 0 2px 2px 0;
+transform: rotate(45deg);
+}
+.accordion-content {
+max-height: 0;
+overflow: hidden;
+transition: max-height 0.3s ease-out;
+}
+.accordion-content.active {
+max-height: 500px;
+}
+</style>
+</head>
+<body class="bg-white min-h-screen">
+<header class="w-full bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
+<div class="container mx-auto px-4 py-4 flex justify-between items-center">
+<a href="#" class="text-primary font-['Pacifico'] text-2xl">Kritik</a>
+<nav class="hidden md:flex space-x-8">
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/c23ae427-56fe-4e90-b7e0-2a2b5edff3ae" data-readdy="true" class="text-secondary hover:text-primary font-medium">Ana Sayfa</a>
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/82a6218d-7835-4001-ae2b-962763b29f01" data-readdy="true" class="text-secondary hover:text-primary font-medium">Hakkımızda</a>
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/fe7eab60-4fd8-475b-b133-1e8501b87ba6" data-readdy="true" class="text-secondary hover:text-primary font-medium">Kitaplar</a>
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/76db291b-2673-4fec-86d1-8c9024c4a5a9" data-readdy="true" class="text-secondary hover:text-primary font-medium">Yazarlar</a>
+<a href="#" class="text-primary font-medium border-b-2 border-primary">İletişim</a>
+</nav>
+<div class="flex items-center space-x-4">
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-search-line ri-lg"></i>
+</a>
+<div class="relative" id="languageSelector">
+<button class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary" id="languageButton">
+<i class="ri-global-line ri-lg"></i>
+</button>
+<div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50" id="languageDropdown">
+<a href="#" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 active" data-lang="tr">
+<i class="ri-flag-line ri-lg mr-2"></i>
+<span>Türkçe</span>
+<i class="ri-check-line ri-lg ml-auto text-primary"></i>
+</a>
+<a href="#" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50" data-lang="en">
+<i class="ri-flag-2-line ri-lg mr-2"></i>
+<span>English</span>
+</a>
+<a href="#" class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50" data-lang="pt">
+<i class="ri-flag-line ri-lg mr-2"></i>
+<span>Português</span>
+</a>
+</div>
+</div>
+<button class="block md:hidden w-8 h-8 flex items-center justify-center text-secondary" id="mobileMenuButton">
+<i class="ri-menu-line ri-lg"></i>
+</button>
+</div>
+</div>
+<div id="mobileMenu" class="hidden md:hidden bg-white shadow-md absolute w-full z-50">
+<div class="container mx-auto px-4 py-2">
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/c23ae427-56fe-4e90-b7e0-2a2b5edff3ae" data-readdy="true" class="block py-3 text-secondary hover:text-primary font-medium border-b border-gray-100">Ana Sayfa</a>
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/82a6218d-7835-4001-ae2b-962763b29f01" data-readdy="true" class="block py-3 text-secondary hover:text-primary font-medium border-b border-gray-100">Hakkımızda</a>
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/fe7eab60-4fd8-475b-b133-1e8501b87ba6" data-readdy="true" class="block py-3 text-secondary hover:text-primary font-medium border-b border-gray-100">Kitaplar</a>
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/76db291b-2673-4fec-86d1-8c9024c4a5a9" data-readdy="true" class="block py-3 text-secondary hover:text-primary font-medium border-b border-gray-100">Yazarlar</a>
+<a href="#" class="block py-3 text-primary font-medium">İletişim</a>
+</div>
+</div>
+</header>
+<main class="pt-20">
+<!-- Breadcrumb -->
+<div class="bg-gray-50 py-3">
+<div class="container mx-auto px-4">
+<div class="flex items-center text-sm text-gray-600">
+<a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/c23ae427-56fe-4e90-b7e0-2a2b5edff3ae" data-readdy="true" class="hover:text-primary">Ana Sayfa</a>
+<i class="ri-arrow-right-s-line mx-2"></i>
+<span class="text-primary">İletişim</span>
+</div>
+</div>
+</div>
+<!-- Hero Section -->
+<section class="py-16 bg-gray-50">
+<div class="container mx-auto px-4">
+<div class="max-w-3xl mx-auto text-center">
+<h1 class="text-4xl md:text-5xl font-bold text-secondary mb-6">Bize Ulaşın</h1>
+<p class="text-lg text-gray-600 mb-8">Kritik Yayınları'na hoş geldiniz. Sorularınız, önerileriniz veya işbirliği teklifleriniz için bizimle iletişime geçebilirsiniz. Size en kısa sürede dönüş yapacağız.</p>
+<div class="flex flex-wrap justify-center gap-4">
+<a href="#contact-form" class="bg-primary text-white px-6 py-3 !rounded-button font-medium hover:bg-opacity-90 transition whitespace-nowrap">Mesaj Gönderin</a>
+<a href="#map" class="bg-white text-secondary px-6 py-3 !rounded-button font-medium border border-gray-200 hover:bg-gray-50 transition whitespace-nowrap">Bizi Ziyaret Edin</a>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Contact Info Section -->
+<section class="py-16 bg-white">
+<div class="container mx-auto px-4">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+<div>
+<div class="inline-block px-4 py-2 bg-primary/10 rounded-full text-primary font-medium mb-6">İletişim Bilgileri</div>
+<h2 class="text-3xl font-bold text-secondary mb-8">Nasıl Ulaşabilirsiniz?</h2>
+<div class="space-y-8 mb-12">
+<div class="flex items-start">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mr-6 flex-shrink-0">
+<i class="ri-map-pin-line ri-lg"></i>
+</div>
+<div>
+<h3 class="text-xl font-bold text-secondary mb-2">Merkez Ofis</h3>
+<p class="text-gray-600">Bağdat Caddesi No:123, Kadıköy, İstanbul, Türkiye</p>
+<p class="text-gray-600 mt-1">Posta Kodu: 34710</p>
+</div>
+</div>
+<div class="flex items-start">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mr-6 flex-shrink-0">
+<i class="ri-mail-line ri-lg"></i>
+</div>
+<div>
+<h3 class="text-xl font-bold text-secondary mb-2">E-posta Adresleri</h3>
+<p class="text-gray-600">Genel Bilgi: <a href="mailto:info@kritikyayinlari.com" class="text-primary hover:underline">info@kritikyayinlari.com</a></p>
+<p class="text-gray-600">Basın İlişkileri: <a href="mailto:basin@kritikyayinlari.com" class="text-primary hover:underline">basin@kritikyayinlari.com</a></p>
+<p class="text-gray-600">Yazar Başvuruları: <a href="mailto:yazarlar@kritikyayinlari.com" class="text-primary hover:underline">yazarlar@kritikyayinlari.com</a></p>
+</div>
+</div>
+<div class="flex items-start">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mr-6 flex-shrink-0">
+<i class="ri-phone-line ri-lg"></i>
+</div>
+<div>
+<h3 class="text-xl font-bold text-secondary mb-2">Telefon Numaraları</h3>
+<p class="text-gray-600">Santral: <a href="tel:+902123456789" class="hover:text-primary">+90 212 345 67 89</a></p>
+<p class="text-gray-600">Müşteri Hizmetleri: <a href="tel:+902123456790" class="hover:text-primary">+90 212 345 67 90</a></p>
+<p class="text-gray-600">Faks: +90 212 345 67 91</p>
+</div>
+</div>
+<div class="flex items-start">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mr-6 flex-shrink-0">
+<i class="ri-time-line ri-lg"></i>
+</div>
+<div>
+<h3 class="text-xl font-bold text-secondary mb-2">Çalışma Saatleri</h3>
+<p class="text-gray-600">Pazartesi - Cuma: 09:00 - 18:00</p>
+<p class="text-gray-600">Cumartesi: 10:00 - 14:00 (Sadece Kitabevi)</p>
+<p class="text-gray-600">Pazar: Kapalı</p>
+<p class="text-gray-600 mt-2 text-sm">Resmi tatillerde kapalıyız</p>
+</div>
+</div>
+</div>
+<div>
+<h3 class="text-xl font-bold text-secondary mb-4">Sosyal Medya</h3>
+<p class="text-gray-600 mb-4">Bizi sosyal medyada takip ederek en güncel haberlerden ve etkinliklerden haberdar olabilirsiniz.</p>
+<div class="flex space-x-4">
+<a href="#" class="w-10 h-10 flex items-center justify-center bg-white text-secondary hover:text-primary border border-gray-200 rounded-full transition">
+<i class="ri-facebook-fill ri-lg"></i>
+</a>
+<a href="#" class="w-10 h-10 flex items-center justify-center bg-white text-secondary hover:text-primary border border-gray-200 rounded-full transition">
+<i class="ri-twitter-fill ri-lg"></i>
+</a>
+<a href="#" class="w-10 h-10 flex items-center justify-center bg-white text-secondary hover:text-primary border border-gray-200 rounded-full transition">
+<i class="ri-instagram-fill ri-lg"></i>
+</a>
+<a href="#" class="w-10 h-10 flex items-center justify-center bg-white text-secondary hover:text-primary border border-gray-200 rounded-full transition">
+<i class="ri-youtube-fill ri-lg"></i>
+</a>
+<a href="#" class="w-10 h-10 flex items-center justify-center bg-white text-secondary hover:text-primary border border-gray-200 rounded-full transition">
+<i class="ri-linkedin-fill ri-lg"></i>
+</a>
+</div>
+</div>
+</div>
+<div id="contact-form">
+<div class="bg-white p-8 rounded-lg shadow-md border border-gray-100">
+<h3 class="text-2xl font-bold text-secondary mb-6">Bize Mesaj Gönderin</h3>
+<form id="contactForm">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div>
+<label for="name" class="block text-gray-700 font-medium mb-2">Adınız Soyadınız <span class="text-red-500">*</span></label>
+<input type="text" id="name" class="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary" placeholder="Adınız Soyadınız" required>
+</div>
+<div>
+<label for="email" class="block text-gray-700 font-medium mb-2">E-posta <span class="text-red-500">*</span></label>
+<input type="email" id="email" class="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary" placeholder="ornek@mail.com" required>
+</div>
+</div>
+<div class="mb-6">
+<label for="department" class="block text-gray-700 font-medium mb-2">Departman</label>
+<div class="relative">
+<select id="department" class="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary appearance-none pr-8 bg-white">
+<option value="">Seçiniz</option>
+<option value="general">Genel Bilgi</option>
+<option value="sales">Satış</option>
+<option value="press">Basın İlişkileri</option>
+<option value="author">Yazar Başvuruları</option>
+<option value="support">Teknik Destek</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
+<i class="ri-arrow-down-s-line"></i>
+</div>
+</div>
+</div>
+<div class="mb-6">
+<label for="subject" class="block text-gray-700 font-medium mb-2">Konu <span class="text-red-500">*</span></label>
+<input type="text" id="subject" class="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary" placeholder="Mesajınızın konusu" required>
+</div>
+<div class="mb-6">
+<label for="message" class="block text-gray-700 font-medium mb-2">Mesajınız <span class="text-red-500">*</span></label>
+<textarea id="message" rows="5" class="w-full px-4 py-3 rounded border border-gray-200 focus:outline-none focus:border-primary" placeholder="Mesajınızı buraya yazın..." required></textarea>
+</div>
+<div class="mb-6">
+<label class="custom-checkbox">
+<input type="checkbox" id="privacy" required>
+<span class="checkmark"></span>
+<span class="text-gray-600 text-sm ml-2">Kişisel verilerimin işlenmesine izin veriyorum ve <a href="#" class="text-primary hover:underline">Gizlilik Politikası</a>'nı okudum ve kabul ediyorum.</span>
+</label>
+</div>
+<button type="submit" class="bg-primary text-white px-6 py-3 !rounded-button font-medium hover:bg-opacity-90 transition whitespace-nowrap w-full">Mesaj Gönder</button>
+</form>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Department Contacts Section -->
+<section class="py-16 bg-gray-50">
+<div class="container mx-auto px-4">
+<div class="text-center mb-12">
+<div class="inline-block px-4 py-2 bg-primary/10 rounded-full text-primary font-medium mb-4">Departmanlar</div>
+<h2 class="text-3xl font-bold text-secondary mb-4">Departman İletişim Bilgileri</h2>
+<p class="text-gray-600 max-w-2xl mx-auto">Farklı konular için ilgili departmanlarımıza doğrudan ulaşabilirsiniz. Size en kısa sürede dönüş yapacağız.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mb-6">
+<i class="ri-newspaper-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-bold text-secondary mb-3">Basın İlişkileri</h3>
+<p class="text-gray-600 mb-4">Röportaj talepleri, basın bültenleri ve medya işbirlikleri için bizimle iletişime geçebilirsiniz.</p>
+<div class="space-y-2">
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-user-line"></i>
+</div>
+<span class="text-gray-600">Deniz Aydın</span>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-mail-line"></i>
+</div>
+<a href="mailto:basin@kritikyayinlari.com" class="text-gray-600 hover:text-primary">basin@kritikyayinlari.com</a>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-phone-line"></i>
+</div>
+<a href="tel:+902123456792" class="text-gray-600 hover:text-primary">+90 212 345 67 92</a>
+</div>
+</div>
+</div>
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mb-6">
+<i class="ri-shopping-bag-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-bold text-secondary mb-3">Satış Departmanı</h3>
+<p class="text-gray-600 mb-4">Toplu sipariş, kurumsal satış ve dağıtım konularında bilgi almak için iletişime geçebilirsiniz.</p>
+<div class="space-y-2">
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-user-line"></i>
+</div>
+<span class="text-gray-600">Mehmet Yılmaz</span>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-mail-line"></i>
+</div>
+<a href="mailto:satis@kritikyayinlari.com" class="text-gray-600 hover:text-primary">satis@kritikyayinlari.com</a>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-phone-line"></i>
+</div>
+<a href="tel:+902123456793" class="text-gray-600 hover:text-primary">+90 212 345 67 93</a>
+</div>
+</div>
+</div>
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mb-6">
+<i class="ri-edit-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-bold text-secondary mb-3">Yazar Başvuruları</h3>
+<p class="text-gray-600 mb-4">Eserlerinizi yayımlatmak istiyorsanız, başvuru süreciyle ilgili bilgi almak için iletişime geçebilirsiniz.</p>
+<div class="space-y-2">
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-user-line"></i>
+</div>
+<span class="text-gray-600">Ayşe Kaya</span>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-mail-line"></i>
+</div>
+<a href="mailto:yazarlar@kritikyayinlari.com" class="text-gray-600 hover:text-primary">yazarlar@kritikyayinlari.com</a>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-phone-line"></i>
+</div>
+<a href="tel:+902123456794" class="text-gray-600 hover:text-primary">+90 212 345 67 94</a>
+</div>
+</div>
+</div>
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mb-6">
+<i class="ri-customer-service-2-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-bold text-secondary mb-3">Müşteri Hizmetleri</h3>
+<p class="text-gray-600 mb-4">Siparişleriniz, ürünlerimiz veya hizmetlerimizle ilgili sorularınız için müşteri hizmetlerimize ulaşabilirsiniz.</p>
+<div class="space-y-2">
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-team-line"></i>
+</div>
+<span class="text-gray-600">Müşteri Hizmetleri Ekibi</span>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-mail-line"></i>
+</div>
+<a href="mailto:destek@kritikyayinlari.com" class="text-gray-600 hover:text-primary">destek@kritikyayinlari.com</a>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-phone-line"></i>
+</div>
+<a href="tel:+902123456790" class="text-gray-600 hover:text-primary">+90 212 345 67 90</a>
+</div>
+</div>
+</div>
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mb-6">
+<i class="ri-briefcase-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-bold text-secondary mb-3">İnsan Kaynakları</h3>
+<p class="text-gray-600 mb-4">Kariyer fırsatları, staj programları ve iş başvuruları için insan kaynakları departmanımızla iletişime geçebilirsiniz.</p>
+<div class="space-y-2">
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-user-line"></i>
+</div>
+<span class="text-gray-600">Canan Öztürk</span>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-mail-line"></i>
+</div>
+<a href="mailto:kariyer@kritikyayinlari.com" class="text-gray-600 hover:text-primary">kariyer@kritikyayinlari.com</a>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-phone-line"></i>
+</div>
+<a href="tel:+902123456795" class="text-gray-600 hover:text-primary">+90 212 345 67 95</a>
+</div>
+</div>
+</div>
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md">
+<div class="w-12 h-12 flex items-center justify-center bg-primary/10 rounded-full text-primary mb-6">
+<i class="ri-global-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-bold text-secondary mb-3">Uluslararası İlişkiler</h3>
+<p class="text-gray-600 mb-4">Yurtdışı yayın hakları, çeviri projeleri ve uluslararası işbirlikleri için iletişime geçebilirsiniz.</p>
+<div class="space-y-2">
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-user-line"></i>
+</div>
+<span class="text-gray-600">Selin Aksoy</span>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-mail-line"></i>
+</div>
+<a href="mailto:international@kritikyayinlari.com" class="text-gray-600 hover:text-primary">international@kritikyayinlari.com</a>
+</div>
+<div class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2">
+<i class="ri-phone-line"></i>
+</div>
+<a href="tel:+902123456796" class="text-gray-600 hover:text-primary">+90 212 345 67 96</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Map Section -->
+<section id="map" class="py-16 bg-white">
+<div class="container mx-auto px-4">
+<div class="text-center mb-12">
+<div class="inline-block px-4 py-2 bg-primary/10 rounded-full text-primary font-medium mb-4">Konum</div>
+<h2 class="text-3xl font-bold text-secondary mb-4">Bizi Ziyaret Edin</h2>
+<p class="text-gray-600 max-w-2xl mx-auto">Merkez ofisimiz İstanbul'un kalbinde, Kadıköy'de yer almaktadır. Aşağıdaki haritadan konumumuzu görebilirsiniz.</p>
+</div>
+<div class="rounded-lg overflow-hidden shadow-md border border-gray-100 mb-8">
+<div class="w-full h-96 relative" style="background-image: url('https://public.readdy.ai/gen_page/map_placeholder_1280x720.png'); background-size: cover; background-position: center;"></div>
+</div>
+<div class="max-w-3xl mx-auto">
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+<div class="flex flex-col md:flex-row md:items-center justify-between">
+<div>
+<h3 class="text-xl font-bold text-secondary mb-2">Kritik Yayınları Merkez Ofisi</h3>
+<p class="text-gray-600 mb-4">Bağdat Caddesi No:123, Kadıköy, İstanbul, Türkiye</p>
+<div class="flex items-center text-gray-600 mb-1">
+<i class="ri-bus-line mr-2"></i>
+<span>Toplu Taşıma: 8, 14, 19 numaralı otobüsler</span>
+</div>
+<div class="flex items-center text-gray-600 mb-1">
+<i class="ri-train-line mr-2"></i>
+<span>Metro: Kadıköy durağı (10 dakika yürüme mesafesi)</span>
+</div>
+<div class="flex items-center text-gray-600">
+<i class="ri-car-line mr-2"></i>
+<span>Otopark: Bina altında ücretli otopark mevcuttur</span>
+</div>
+</div>
+<div class="mt-6 md:mt-0">
+<a href="https://maps.google.com" target="_blank" class="bg-primary text-white px-6 py-3 !rounded-button font-medium hover:bg-opacity-90 transition whitespace-nowrap inline-flex items-center">
+<i class="ri-direction-line mr-2"></i>
+Yol Tarifi Al
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- FAQ Section -->
+<section class="py-16 bg-gray-50">
+<div class="container mx-auto px-4">
+<div class="text-center mb-12">
+<div class="inline-block px-4 py-2 bg-primary/10 rounded-full text-primary font-medium mb-4">SSS</div>
+<h2 class="text-3xl font-bold text-secondary mb-4">Sık Sorulan Sorular</h2>
+<p class="text-gray-600 max-w-2xl mx-auto">Sıkça sorulan soruların cevaplarını aşağıda bulabilirsiniz. Başka sorularınız varsa, lütfen bizimle iletişime geçmekten çekinmeyin.</p>
+</div>
+<div class="max-w-3xl mx-auto">
+<div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+<div class="divide-y divide-gray-100">
+<div class="accordion-item">
+<button class="accordion-header w-full px-6 py-4 flex items-center justify-between text-left font-medium text-secondary hover:text-primary focus:outline-none">
+<span>Kitaplarınızı nereden satın alabilirim?</span>
+<i class="ri-arrow-down-s-line text-xl transition-transform"></i>
+</button>
+<div class="accordion-content px-6 pb-4">
+<p class="text-gray-600">Kitaplarımızı Türkiye genelindeki tüm büyük kitapçılardan, online kitap satış sitelerinden ve kendi web sitemiz üzerinden satın alabilirsiniz. Ayrıca İstanbul, Ankara ve İzmir'de bulunan Kritik Kitabevlerimizden de temin edebilirsiniz.</p>
+</div>
+</div>
+<div class="accordion-item">
+<button class="accordion-header w-full px-6 py-4 flex items-center justify-between text-left font-medium text-secondary hover:text-primary focus:outline-none">
+<span>Yazar olmak için nasıl başvurabilirim?</span>
+<i class="ri-arrow-down-s-line text-xl transition-transform"></i>
+</button>
+<div class="accordion-content px-6 pb-4">
+<p class="text-gray-600">Eserlerinizi yayımlatmak için yazarlar@kritikyayinlari.com adresine e-posta gönderebilirsiniz. E-postanızda eserinizin adı, türü, kısa bir özeti ve örnek bir bölüm (en fazla 20 sayfa) yer almalıdır. Başvurunuz editörlerimiz tarafından değerlendirilecek ve size en kısa sürede dönüş yapılacaktır.</p>
+</div>
+</div>
+<div class="accordion-item">
+<button class="accordion-header w-full px-6 py-4 flex items-center justify-between text-left font-medium text-secondary hover:text-primary focus:outline-none">
+<span>Sipariş ettiğim kitaplar ne zaman elime ulaşır?</span>
+<i class="ri-arrow-down-s-line text-xl transition-transform"></i>
+</button>
+<div class="accordion-content px-6 pb-4">
+<p class="text-gray-600">Web sitemiz üzerinden verdiğiniz siparişler, ödemenin onaylanmasından sonra 1-3 iş günü içinde kargoya verilir. Teslimat süresi, bulunduğunuz bölgeye göre değişiklik gösterebilir. İstanbul içi 1-2 iş günü, diğer iller için 2-4 iş günü içinde teslimat yapılmaktadır.</p>
+</div>
+</div>
+<div class="accordion-item">
+<button class="accordion-header w-full px-6 py-4 flex items-center justify-between text-left font-medium text-secondary hover:text-primary focus:outline-none">
+<span>E-kitap formatında yayınlarınız var mı?</span>
+<i class="ri-arrow-down-s-line text-xl transition-transform"></i>
+</button>
+<div class="accordion-content px-6 pb-4">
+<p class="text-gray-600">Evet, kitaplarımızın büyük bir kısmı e-kitap formatında da mevcuttur. E-kitaplarımızı web sitemizden veya dijital kitap platformlarından satın alabilirsiniz. Ayrıca bazı kitaplarımız sesli kitap formatında da sunulmaktadır.</p>
+</div>
+</div>
+<div class="accordion-item">
+<button class="accordion-header w-full px-6 py-4 flex items-center justify-between text-left font-medium text-secondary hover:text-primary focus:outline-none">
+<span>Toplu kitap siparişi vermek istiyorum, nasıl indirim alabilirim?</span>
+<i class="ri-arrow-down-s-line text-xl transition-transform"></i>
+</button>
+<div class="accordion-content px-6 pb-4">
+<p class="text-gray-600">Okullar, kütüphaneler ve kurumlar için özel indirim oranları sunuyoruz. Toplu siparişleriniz için satis@kritikyayinlari.com adresine e-posta gönderebilir veya +90 212 345 67 93 numaralı telefondan satış departmanımızla iletişime geçebilirsiniz. Sipariş miktarına göre %20 ile %40 arasında değişen indirimler uygulanmaktadır.</p>
+</div>
+</div>
+<div class="accordion-item">
+<button class="accordion-header w-full px-6 py-4 flex items-center justify-between text-left font-medium text-secondary hover:text-primary focus:outline-none">
+<span>Yazar söyleşileri ve imza günleri hakkında nasıl bilgi alabilirim?</span>
+<i class="ri-arrow-down-s-line text-xl transition-transform"></i>
+</button>
+<div class="accordion-content px-6 pb-4">
+<p class="text-gray-600">Tüm etkinliklerimiz web sitemizin "Etkinlikler" bölümünde ve sosyal medya hesaplarımızda duyurulmaktadır. Ayrıca e-bültenimize abone olarak da etkinliklerimizden haberdar olabilirsiniz. Özel etkinlik talepleri için etkinlik@kritikyayinlari.com adresine e-posta gönderebilirsiniz.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-16 bg-secondary text-white">
+<div class="container mx-auto px-4 text-center">
+<h2 class="text-3xl font-bold mb-6">Edebiyat Dünyasının Bir Parçası Olun</h2>
+<p class="text-lg text-white/80 mb-8 max-w-2xl mx-auto">Yeni çıkan kitaplar, yazar söyleşileri ve özel indirimlerden haberdar olmak için bültenimize abone olun.</p>
+<div class="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto">
+<input type="email" placeholder="E-posta adresiniz" class="px-4 py-3 !rounded-button focus:outline-none text-secondary w-full border-none">
+<button class="bg-primary text-white px-6 py-3 !rounded-button font-medium hover:bg-opacity-90 transition whitespace-nowrap">Abone Ol</button>
+</div>
+</div>
+</section>
+</main>
+<footer class="bg-white border-t border-gray-200 py-12">
+<div class="container mx-auto px-4">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+<div>
+<a href="#" class="text-primary font-['Pacifico'] text-2xl">Kritik</a>
+<p class="text-gray-600 mt-4">Edebiyat dünyasının en seçkin eserlerini okuyucularla buluşturan yayınevi.</p>
+<div class="flex space-x-4 mt-6">
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-facebook-fill ri-lg"></i>
+</a>
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-twitter-fill ri-lg"></i>
+</a>
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-instagram-fill ri-lg"></i>
+</a>
+<a href="#" class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary">
+<i class="ri-youtube-fill ri-lg"></i>
+</a>
+</div>
+</div>
+<div>
+<h3 class="text-lg font-bold text-secondary mb-4">Hızlı Erişim</h3>
+<ul class="space-y-2">
+<li><a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/c23ae427-56fe-4e90-b7e0-2a2b5edff3ae" data-readdy="true" class="text-gray-600 hover:text-primary">Ana Sayfa</a></li>
+<li><a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/82a6218d-7835-4001-ae2b-962763b29f01" data-readdy="true" class="text-gray-600 hover:text-primary">Hakkımızda</a></li>
+<li><a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/fe7eab60-4fd8-475b-b133-1e8501b87ba6" data-readdy="true" class="text-gray-600 hover:text-primary">Kitaplar</a></li>
+<li><a href="https://readdy.ai/home/1a1523fc-e2f9-436b-84d4-2f84ebfac167/76db291b-2673-4fec-86d1-8c9024c4a5a9" data-readdy="true" class="text-gray-600 hover:text-primary">Yazarlar</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">İletişim</a></li>
+</ul>
+</div>
+<div>
+<h3 class="text-lg font-bold text-secondary mb-4">Kategoriler</h3>
+<ul class="space-y-2">
+<li><a href="#" class="text-gray-600 hover:text-primary">Edebiyat</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Felsefe</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Tarih</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Kişisel Gelişim</a></li>
+<li><a href="#" class="text-gray-600 hover:text-primary">Bilim</a></li>
+</ul>
+</div>
+<div>
+<h3 class="text-lg font-bold text-secondary mb-4">İletişim</h3>
+<ul class="space-y-2">
+<li class="flex items-start">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2 mt-1">
+<i class="ri-map-pin-line"></i>
+</div>
+<span class="text-gray-600">Bağdat Caddesi No:123, Kadıköy, İstanbul</span>
+</li>
+<li class="flex items-start">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2 mt-1">
+<i class="ri-phone-line"></i>
+</div>
+<span class="text-gray-600">+90 212 345 67 89</span>
+</li>
+<li class="flex items-start">
+<div class="w-5 h-5 flex items-center justify-center text-primary mr-2 mt-1">
+<i class="ri-mail-line"></i>
+</div>
+<span class="text-gray-600">info@kritikyayinlari.com</span>
+</li>
+</ul>
+</div>
+</div>
+<div class="border-t border-gray-200 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+<p class="text-gray-600 text-sm mb-4 md:mb-0">© 2025 Kritik Yayınları. Tüm hakları saklıdır.</p>
+<div class="flex items-center space-x-4">
+<a href="#" class="text-gray-600 text-sm hover:text-primary">Gizlilik Politikası</a>
+<a href="#" class="text-gray-600 text-sm hover:text-primary">Kullanım Şartları</a>
+</div>
+</div>
+</div>
+</footer>
+<script id="mobileMenuScript">
+document.addEventListener('DOMContentLoaded', function() {
+const mobileMenuButton = document.getElementById('mobileMenuButton');
+const mobileMenu = document.getElementById('mobileMenu');
+mobileMenuButton.addEventListener('click', function() {
+mobileMenu.classList.toggle('hidden');
+});
+});
+</script>
+<script id="languageScript">
+document.addEventListener('DOMContentLoaded', function() {
+const languageButton = document.getElementById('languageButton');
+const languageDropdown = document.getElementById('languageDropdown');
+const languageOptions = languageDropdown.querySelectorAll('a');
+languageButton.addEventListener('click', function(e) {
+e.preventDefault();
+languageDropdown.classList.toggle('hidden');
+});
+document.addEventListener('click', function(e) {
+if (!document.getElementById('languageSelector').contains(e.target)) {
+languageDropdown.classList.add('hidden');
+}
+});
+languageOptions.forEach(option => {
+option.addEventListener('click', function(e) {
+e.preventDefault();
+const lang = this.getAttribute('data-lang');
+languageOptions.forEach(opt => {
+opt.classList.remove('active');
+const checkIcon = opt.querySelector('.ri-check-line');
+if (checkIcon) checkIcon.remove();
+});
+this.classList.add('active');
+this.insertAdjacentHTML('beforeend', '<i class="ri-check-line ri-lg ml-auto text-primary"></i>');
+languageDropdown.classList.add('hidden');
+});
+});
+});
+</script>
+<script id="formScript">
+document.addEventListener('DOMContentLoaded', function() {
+const contactForm = document.getElementById('contactForm');
+if (contactForm) {
+contactForm.addEventListener('submit', function(e) {
+e.preventDefault();
+// Form validation
+const name = document.getElementById('name').value;
+const email = document.getElementById('email').value;
+const subject = document.getElementById('subject').value;
+const message = document.getElementById('message').value;
+const privacy = document.getElementById('privacy').checked;
+if (!name || !email || !subject || !message) {
+alert('Lütfen tüm zorunlu alanları doldurun.');
+return;
+}
+if (!privacy) {
+alert('Lütfen gizlilik politikasını kabul edin.');
+return;
+}
+// Success message
+alert('Mesajınız başarıyla gönderildi. En kısa sürede size dönüş yapacağız.');
+contactForm.reset();
+});
+}
+});
+</script>
+<script id="accordionScript">
+document.addEventListener('DOMContentLoaded', function() {
+const accordionHeaders = document.querySelectorAll('.accordion-header');
+accordionHeaders.forEach(header => {
+header.addEventListener('click', function() {
+const content = this.nextElementSibling;
+const icon = this.querySelector('i');
+// Toggle content
+content.classList.toggle('active');
+// Rotate icon
+if (content.classList.contains('active')) {
+icon.style.transform = 'rotate(180deg)';
+} else {
+icon.style.transform = 'rotate(0)';
+}
+// Close other accordions
+accordionHeaders.forEach(otherHeader => {
+if (otherHeader !== header) {
+const otherContent = otherHeader.nextElementSibling;
+const otherIcon = otherHeader.querySelector('i');
+otherContent.classList.remove('active');
+otherIcon.style.transform = 'rotate(0)';
+}
+});
+});
+});
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kritik Yayınları - Yerel Test</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#d4af37',secondary:'#1a1a1a',success:'#10B981',error:'#EF4444'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="icon" type="image/png" href="images/favicon.png">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-primary mb-2 flex items-center">
+                <i class="ri-book-line mr-2"></i>
+                Kritik Yayınları - Yerel Test
+            </h1>
+            <p class="text-gray-600">Docker olmadan Supabase'i taklit eden yerel servis testi</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Yapılandırma Seçimi -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-secondary mb-4">Yapılandırma Seçimi</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center">
+                        <input type="radio" id="mockSupabase" name="config" value="mock" class="mr-2" checked>
+                        <label for="mockSupabase" class="text-gray-700">Mock Supabase (localStorage)</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="radio" id="sqliteConfig" name="config" value="sqlite" class="mr-2">
+                        <label for="sqliteConfig" class="text-gray-700">SQLite Emülasyonu (localStorage)</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="radio" id="realSupabase" name="config" value="real" class="mr-2">
+                        <label for="realSupabase" class="text-gray-700">Gerçek Supabase (Canlı)</label>
+                    </div>
+                    <button id="applyConfig" class="bg-primary text-white px-4 py-2 rounded-button hover:bg-opacity-90 transition">Yapılandırmayı Uygula</button>
+                </div>
+            </div>
+
+            <!-- Veritabanı Güncelleme -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-secondary mb-4">Veritabanı Güncelleme</h2>
+                <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                    <p class="text-blue-800">Bu işlem, kitapların fiyat ve kategori alanlarını varsayılan değerlere ayarlar.</p>
+                </div>
+                <div class="mb-4">
+                    <div class="w-full bg-gray-200 rounded-full h-4">
+                        <div id="progressBar" class="bg-primary h-4 rounded-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+                <div id="statusMessage" class="mb-4 text-gray-700">
+                    Hazır
+                </div>
+                <div class="flex justify-end">
+                    <button id="updateDatabaseBtn" class="bg-primary text-white px-4 py-2 rounded-button hover:bg-opacity-90 transition">
+                        <i class="ri-refresh-line mr-2"></i>
+                        Veritabanını Güncelle
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kitap Listesi -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-secondary mb-4">Kitap Listesi</h2>
+            <div id="booksList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Kitaplar buraya yüklenecek -->
+                <div class="text-gray-500">Yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yapılandırma Dosyaları -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/mock-supabase.js"></script>
+    <script src="js/sqlite-config.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Yapılandırma seçimi
+            const configRadios = document.querySelectorAll('input[name="config"]');
+            const applyConfigBtn = document.getElementById('applyConfig');
+            const updateDatabaseBtn = document.getElementById('updateDatabaseBtn');
+            const progressBar = document.getElementById('progressBar');
+            const statusMessage = document.getElementById('statusMessage');
+            const booksList = document.getElementById('booksList');
+            
+            let currentConfig = localStorage.getItem('currentConfig') || 'mock';
+            
+            // Sayfa yüklendiğinde doğru yapılandırmayı seç
+            document.querySelector(`input[value="${currentConfig}"]`).checked = true;
+            
+            // Yapılandırma değişikliğini uygula
+            applyConfigBtn.addEventListener('click', function() {
+                const selectedConfig = document.querySelector('input[name="config"]:checked').value;
+                localStorage.setItem('currentConfig', selectedConfig);
+                
+                // Sayfayı yenile
+                window.location.reload();
+            });
+            
+            // Veritabanı güncelleme
+            updateDatabaseBtn.addEventListener('click', updateDatabase);
+            
+            // Kitapları yükle
+            loadBooks();
+            
+            // Veritabanını güncelle
+            async function updateDatabase() {
+                statusMessage.textContent = 'Güncelleme başlatılıyor...';
+                progressBar.style.width = '10%';
+                
+                try {
+                    // Tüm kitapları getir
+                    const { data: books, error } = await supabaseClient.from('books').select('*').execute();
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    statusMessage.textContent = `${books.length} kitap bulundu. Güncelleme başlıyor...`;
+                    progressBar.style.width = '20%';
+                    
+                    let updatedCount = 0;
+                    const totalBooks = books.length;
+                    
+                    // Her kitabı güncelle
+                    for (const book of books) {
+                        try {
+                            // Kitabı güncelle
+                            const { error: updateError } = await supabaseClient
+                                .from('books')
+                                .update({ price: '0', category: 'Genel' })
+                                .eq('id', book.id)
+                                .execute();
+                            
+                            if (updateError) {
+                                console.error(`Kitap ${book.id} güncellenirken hata:`, updateError);
+                            } else {
+                                updatedCount++;
+                            }
+                            
+                            // İlerleme çubuğunu güncelle
+                            const progress = 20 + Math.round((updatedCount / totalBooks) * 80);
+                            progressBar.style.width = `${progress}%`;
+                            statusMessage.textContent = `${updatedCount}/${totalBooks} kitap güncellendi...`;
+                            
+                            // Kısa bir bekleme ekle
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        } catch (err) {
+                            console.error(`Kitap ${book.id} güncellenirken hata:`, err);
+                        }
+                    }
+                    
+                    // Güncelleme tamamlandı
+                    progressBar.style.width = '100%';
+                    statusMessage.textContent = `Güncelleme tamamlandı. ${updatedCount}/${totalBooks} kitap güncellendi.`;
+                    
+                    // Kitap listesini yenile
+                    loadBooks();
+                } catch (error) {
+                    console.error('Veritabanı güncelleme hatası:', error);
+                    statusMessage.textContent = `Hata: ${error.message || 'Bilinmeyen bir hata oluştu.'}`;
+                    progressBar.style.width = '0%';
+                }
+            }
+            
+            // Kitapları yükle
+            async function loadBooks() {
+                booksList.innerHTML = '<div class="text-gray-500">Yükleniyor...</div>';
+                
+                try {
+                    // Kitapları getir
+                    const { data: books, error } = await supabaseClient.from('books').select('*').execute();
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    if (books.length === 0) {
+                        booksList.innerHTML = '<div class="text-gray-500">Kitap bulunamadı.</div>';
+                        return;
+                    }
+                    
+                    // Yazarları getir
+                    const { data: authors, error: authorsError } = await supabaseClient.from('authors').select('*').execute();
+                    
+                    if (authorsError) {
+                        throw authorsError;
+                    }
+                    
+                    // Kitapları listele
+                    booksList.innerHTML = '';
+                    
+                    books.forEach(book => {
+                        const author = authors.find(a => a.id === book.author_id) || { name: 'Bilinmeyen Yazar' };
+                        
+                        const bookCard = document.createElement('div');
+                        bookCard.className = 'bg-gray-50 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition';
+                        
+                        bookCard.innerHTML = `
+                            <div class="aspect-w-2 aspect-h-3 bg-gray-200">
+                                <img src="${book.cover_url}" alt="${book.title}" class="object-cover w-full h-48">
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-lg font-semibold text-secondary mb-1">${book.title}</h3>
+                                <p class="text-gray-600 mb-2">${author.name}</p>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-500">${book.year}</span>
+                                    <span class="text-gray-500">${book.pages} sayfa</span>
+                                </div>
+                                <div class="mt-2 text-sm">
+                                    <span class="text-primary font-semibold">Fiyat: ${book.price}</span>
+                                    <span class="text-gray-600 ml-2">Kategori: ${book.category}</span>
+                                </div>
+                            </div>
+                        `;
+                        
+                        booksList.appendChild(bookCard);
+                    });
+                } catch (error) {
+                    console.error('Kitapları yükleme hatası:', error);
+                    booksList.innerHTML = `<div class="text-red-500">Hata: ${error.message || 'Bilinmeyen bir hata oluştu.'}</div>`;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

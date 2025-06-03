@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitaplar - Kritik Yayınları Yönetim Paneli</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#d4af37',secondary:'#1a1a1a'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Config -->
+    <script src="../js/supabase-config.js"></script>
+    <!-- Supabase Admin API -->
+    <script src="js/supabase-admin-api.js"></script>
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .book-card:hover .quick-view {
+            opacity: 1;
+        }
+        .book-card:hover .favorite-button {
+            opacity: 1;
+        }
+        .category-filter::-webkit-scrollbar {
+            height: 4px;
+        }
+        .category-filter::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .category-filter::-webkit-scrollbar-thumb {
+            background: #d4af37;
+            border-radius: 10px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #d4af37;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #d4af37;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 5px;
+            background: #e5e7eb;
+            outline: none;
+        }
+        .custom-checkbox {
+            display: flex;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+        }
+        .custom-checkbox input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        .checkmark {
+            height: 20px;
+            width: 20px;
+            background-color: #fff;
+            border: 2px solid #e5e7eb;
+            border-radius: 4px;
+            position: relative;
+        }
+        .custom-checkbox:hover input ~ .checkmark {
+            border-color: #d4af37;
+        }
+        .custom-checkbox input:checked ~ .checkmark {
+            background-color: #d4af37;
+            border-color: #d4af37;
+        }
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .custom-checkbox input:checked ~ .checkmark:after {
+            display: block;
+        }
+        .sidebar-active {
+            background-color: #d4af37 !important;
+            color: #1a1a1a !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex flex-row min-h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-secondary text-white min-h-screen overflow-y-auto transition-all duration-300" id="sidebar-wrapper">
+            <div class="p-6 text-center">
+                <div class="font-['Pacifico'] text-primary text-2xl mb-2">Kritik</div>
+                <p class="text-sm text-gray-400">Yönetim Paneli</p>
+            </div>
+            <div class="py-4">
+                <a href="dashboard.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                    <i class="ri-dashboard-line mr-3 text-lg"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="kitaplar.html" class="flex items-center px-4 py-3 text-white bg-primary/20 border-l-4 border-primary">
+                    <i class="ri-book-open-line mr-3 text-lg"></i>
+                    <span>Kitaplar</span>
+                </a>
+                <a href="yazarlar.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                    <i class="ri-user-line mr-3 text-lg"></i>
+                    <span>Yazarlar</span>
+                </a>
+                <a href="bannerlar.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                    <i class="ri-image-line mr-3 text-lg"></i>
+                    <span>Bannerlar</span>
+                </a>
+                <a href="../anasayfa.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors mt-8">
+                    <i class="ri-arrow-left-line mr-3 text-lg"></i>
+                    <span>Siteye Dön</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Page Content -->
+        <div class="flex-1 transition-all duration-300" id="page-content-wrapper">
+            <!-- Top Navigation -->
+            <nav class="bg-white shadow-sm sticky top-0 z-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <button class="text-secondary hover:text-primary focus:outline-none" id="menu-toggle">
+                        <i class="ri-menu-line text-xl"></i>
+                    </button>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="relative" id="searchContainer">
+                            <button class="w-8 h-8 flex items-center justify-center text-secondary hover:text-primary" id="searchButton">
+                                <i class="ri-search-line ri-lg"></i>
+                            </button>
+                            <div class="hidden absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-100 p-3 z-50" id="searchDropdown">
+                                <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                                    <input type="text" placeholder="Kitap veya yazar ara..." class="w-full px-4 py-2 focus:outline-none text-secondary text-sm">
+                                    <button class="bg-primary text-white p-2 flex items-center justify-center">
+                                        <i class="ri-search-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="relative" id="userDropdown">
+                            <button class="flex items-center text-secondary hover:text-primary focus:outline-none" id="userButton">
+                                <span class="mr-2">Admin</span>
+                                <i class="ri-user-3-line"></i>
+                            </button>
+                            <div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-50" id="userMenu">
+                                <a href="#" class="block px-4 py-2 text-sm text-secondary hover:bg-gray-100">Profil</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-secondary hover:bg-gray-100">Ayarlar</a>
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100" id="logoutBtn">Çıkış</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <!-- Page Header -->
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-secondary">Kitap Yönetimi</h1>
+                    <button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-button flex items-center transition-colors" id="addBookButton">
+                        <i class="ri-add-line mr-2"></i>Yeni Kitap Ekle
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 mb-6 overflow-hidden">
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-semibold text-secondary">Filtreler</h2>
+                            <button type="button" class="text-sm text-primary hover:text-primary/80 flex items-center" id="clearFilters">
+                                <i class="ri-refresh-line mr-1"></i> Filtreleri Temizle
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Kitap Adı veya ISBN</label>
+                                <div class="relative">
+                                    <input type="text" id="search" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Arama yapın...">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                                        <i class="ri-search-line"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label for="author" class="block text-sm font-medium text-gray-700 mb-1">Yazar</label>
+                                <select id="author" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none bg-white">
+                                    <option value="">Tüm Yazarlar</option>
+                                    <!-- Yazarlar JavaScript ile doldurulacak -->
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                                <select id="category" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none bg-white">
+                                    <option value="">Tüm Kategoriler</option>
+                                    <!-- Kategoriler JavaScript ile doldurulacak -->
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="stock" class="block text-sm font-medium text-gray-700 mb-1">Stok Durumu</label>
+                                <select id="stock" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none bg-white">
+                                    <option value="">Tümü</option>
+                                    <option value="in-stock">Stokta</option>
+                                    <option value="low-stock">Az Stokta</option>
+                                    <option value="out-of-stock">Stokta Yok</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Books Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="books-container">
+                    <!-- Book Item Template - JavaScript ile doldurulacak -->
+                    <template id="book-template">
+                        <div class="book-card bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+                            <div class="relative">
+                                <img src="../site_resimleri/1.png" class="w-full h-64 object-cover" alt="Kitap Kapağı">
+                                <div class="absolute top-3 right-3 flex space-x-2 opacity-0 transition-opacity duration-300" id="book-actions">
+                                    <button class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors" data-action="edit">
+                                        <i class="ri-edit-line"></i>
+                                    </button>
+                                    <button class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors" data-action="delete">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                </div>
+                                <div class="absolute top-3 left-3">
+                                    <span class="inline-block bg-green-500 text-white text-xs px-2 py-1 rounded-full">Stokta</span>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="text-secondary font-semibold text-lg mb-1 line-clamp-2">Kırmızı Pazartesi</h3>
+                                <p class="text-gray-500 text-sm mb-2">Gabriel Garcia Marquez</p>
+                                <div class="flex justify-between items-center mt-3">
+                                    <div class="text-sm text-gray-600">
+                                        <span class="font-medium">ISBN:</span> 9789750719479
+                                    </div>
+                                    <div class="text-sm text-gray-600">
+                                        <span class="font-medium">Stok:</span> 25
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <!-- Örnek Kitap Kartları - JavaScript ile değiştirilecek -->
+                    <div class="book-card bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+                        <div class="relative">
+                            <img src="../site_resimleri/1.png" class="w-full h-64 object-cover" alt="Kitap Kapağı">
+                            <div class="absolute top-3 right-3 flex space-x-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100" id="book-actions">
+                                <button class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors" data-action="edit">
+                                    <i class="ri-edit-line"></i>
+                                </button>
+                                <button class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors" data-action="delete">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                            </div>
+                            <div class="absolute top-3 left-3">
+                                <span class="inline-block bg-green-500 text-white text-xs px-2 py-1 rounded-full">Stokta</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-secondary font-semibold text-lg mb-1 line-clamp-2">Kırmızı Pazartesi</h3>
+                            <p class="text-gray-500 text-sm mb-2">Gabriel Garcia Marquez</p>
+                            <div class="flex justify-between items-center mt-3">
+                                <div class="text-sm text-gray-600">
+                                    <span class="font-medium">ISBN:</span> 9789750719479
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <span class="font-medium">Stok:</span> 25
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="book-card bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-1">
+                        <div class="relative">
+                            <img src="../site_resimleri/2.png" class="w-full h-64 object-cover" alt="Kitap Kapağı">
+                            <div class="absolute top-3 right-3 flex space-x-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100" id="book-actions">
+                                <button class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-colors" data-action="edit">
+                                    <i class="ri-edit-line"></i>
+                                </button>
+                                <button class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors" data-action="delete">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                            </div>
+                            <div class="absolute top-3 left-3">
+                                <span class="inline-block bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">Az Stokta</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-secondary font-semibold text-lg mb-1 line-clamp-2">Beyaz Diş</h3>
+                            <p class="text-gray-500 text-sm mb-2">Jack London</p>
+                            <div class="flex justify-between items-center mt-3">
+                                <div class="text-sm text-gray-600">
+                                    <span class="font-medium">ISBN:</span> 9789750718243
+                                </div>
+                                <div class="text-sm text-gray-600">
+                                    <span class="font-medium">Stok:</span> 5
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex justify-center mt-8">
+                    <nav class="flex items-center space-x-1" aria-label="Sayfalama">
+                        <button class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <i class="ri-arrow-left-s-line"></i>
+                        </button>
+                        <button class="w-10 h-10 flex items-center justify-center rounded-full border border-primary bg-primary text-white font-medium">1</button>
+                        <button class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100">2</button>
+                        <button class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100">3</button>
+                        <button class="w-10 h-10 flex items-center justify-center rounded-full border border-gray-300 bg-white text-gray-500 hover:bg-gray-100">
+                            <i class="ri-arrow-right-s-line"></i>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Book Modal -->
+    <div class="fixed inset-0 z-50 hidden" id="addBookModal" aria-labelledby="addBookModalLabel" aria-hidden="true">
+        <!-- Modal Overlay -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity" id="modalOverlay" onclick="document.getElementById('addBookModal').classList.add('hidden'); document.body.classList.remove('overflow-hidden');"></div>
+        
+        <!-- Modal Content -->
+        <div class="flex items-center justify-center min-h-screen p-4 overflow-y-auto">
+            <div class="relative bg-white rounded-lg shadow-xl max-w-4xl w-full mx-auto z-10" onclick="event.stopPropagation();">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
+                    <h3 class="text-xl font-semibold text-secondary" id="addBookModalLabel">
+                        Yeni Kitap Ekle
+                    </h3>
+                    <button type="button" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center" onclick="document.getElementById('addBookModal').classList.add('hidden'); document.body.classList.remove('overflow-hidden');" id="closeModalButton" aria-label="Kapat">
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Modal Body -->
+                <form id="addBookForm" class="p-4 md:p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Kitap Kapağı Yükleme -->
+                        <div class="text-center">
+                            <div class="mb-4 relative mx-auto w-full max-w-[240px] aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                                <img src="../site_resimleri/placeholder.png" alt="Kitap Kapağı" class="w-full h-full object-cover" id="bookCoverPreview">
+                                <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
+                                    <span class="text-white text-sm font-medium">Kapak Görseli Değiştir</span>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <input type="file" class="absolute inset-0 opacity-0 cursor-pointer z-10 w-full" id="bookCover" accept="image/*">
+                                <button type="button" class="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
+                                    <i class="ri-image-add-line mr-2"></i>Kapak Görseli Seç
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Önerilen boyut: 300x400px, Maks. 2MB</p>
+                        </div>
+                        
+                        <!-- Kitap Bilgileri -->
+                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="md:col-span-2">
+                                <label for="bookTitle" class="block text-sm font-medium text-gray-700 mb-1">Kitap Adı <span class="text-red-500">*</span></label>
+                                <input type="text" id="bookTitle" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required>
+                            </div>
+                            
+                            <div>
+                                <label for="author" class="block text-sm font-medium text-gray-700 mb-1">Yazar <span class="text-red-500">*</span></label>
+                                <input type="text" id="author" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required>
+                            </div>
+                            
+                            <div>
+                                <label for="isbn" class="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
+                                <input type="text" id="isbn" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                            </div>
+                            
+                            <div>
+                                <label for="publishedDate" class="block text-sm font-medium text-gray-700 mb-1">Yayın Tarihi</label>
+                                <input type="date" id="publishedDate" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                            </div>
+                            
+                            <div>
+                                <label for="pageCount" class="block text-sm font-medium text-gray-700 mb-1">Sayfa Sayısı</label>
+                                <input type="number" id="pageCount" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label for="shortDescription" class="block text-sm font-medium text-gray-700 mb-1">Kısa Açıklama</label>
+                                <textarea id="shortDescription" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label for="category" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                                <select id="category" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary appearance-none bg-white">
+                                    <option value="" selected>Seçiniz...</option>
+                                    <option value="roman">Roman</option>
+                                    <option value="siir">Şiir</option>
+                                    <option value="oyku">Öykü</option>
+                                    <option value="deneme">Deneme</option>
+                                    <option value="arastirma">Araştırma</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="stock" class="block text-sm font-medium text-gray-700 mb-1">Stok Adedi <span class="text-red-500">*</span></label>
+                                <input type="number" id="stock" min="0" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Footer -->
+                    <div class="flex items-center justify-end space-x-3 mt-6 pt-4 border-t">
+                        <button type="button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors" onclick="document.getElementById('addBookModal').classList.add('hidden'); document.body.classList.remove('overflow-hidden');" id="cancelButton">Vazgeç</button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-button hover:bg-primary/90 transition-colors">Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal için Bootstrap'e ihtiyaç yok, saf JavaScript kullanıyoruz -->
+    <script>
+        // Global modal fonksiyonları - en basit haliyle
+        function openModal() {
+            document.getElementById('addBookModal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+        
+        function closeModal() {
+            document.getElementById('addBookModal').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+    </script>
+    
+    <script>
+        // Menü toggle işlevi
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const wrapper = document.getElementById('wrapper');
+            const sidebar = document.getElementById('sidebar-wrapper');
+            
+            // Sayfa yüklendiğinde menü durumunu kontrol et
+            const isSmallScreen = window.innerWidth <= 992;
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            
+            if (isSmallScreen || isCollapsed) {
+                wrapper.classList.add('toggled');
+            }
+            
+            // Menü toggle butonuna tıklama olayı ekle
+            if (menuToggle) {
+                menuToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sidebar = document.getElementById('sidebar-wrapper');
+                    
+                    if (sidebar.classList.contains('w-64')) {
+                        sidebar.classList.remove('w-64');
+                        sidebar.classList.add('w-0');
+                        localStorage.setItem('sidebarCollapsed', 'true');
+                    } else {
+                        sidebar.classList.remove('w-0');
+                        sidebar.classList.add('w-64');
+                        localStorage.setItem('sidebarCollapsed', 'false');
+                    }
+                });
+            }
+            
+            // İçerik alanına tıklandığında küçük ekranlarda menüyü kapat
+            document.getElementById('page-content-wrapper').addEventListener('click', function() {
+                if (window.innerWidth <= 992) {
+                }
+            });
+
+            // User dropdown toggle
+            const userButton = document.getElementById('userButton');
+            if (userButton) {
+                userButton.addEventListener('click', function() {
+                    document.getElementById('userMenu').classList.toggle('hidden');
+                });
+            }
+
+            // Search dropdown toggle
+            const searchButton = document.getElementById('searchButton');
+            if (searchButton) {
+                searchButton.addEventListener('click', function() {
+                    document.getElementById('searchDropdown').classList.toggle('hidden');
+                });
+            }
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                const userDropdown = document.getElementById('userDropdown');
+                const searchContainer = document.getElementById('searchContainer');
+                const userMenu = document.getElementById('userMenu');
+                const searchDropdown = document.getElementById('searchDropdown');
+                
+                if (userDropdown && !userDropdown.contains(e.target) && userMenu) {
+                    userMenu.classList.add('hidden');
+                }
+                
+                if (searchContainer && !searchContainer.contains(e.target) && searchDropdown) {
+                    searchDropdown.classList.add('hidden');
+                }
+            });
+
+            // Book cover preview
+            const bookCoverInput = document.getElementById('bookCover');
+            if (bookCoverInput) {
+                bookCoverInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const preview = document.getElementById('bookCoverPreview');
+                            if (preview) {
+                                preview.src = e.target.result;
+                            }
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            // Modal handling
+            const addBookButton = document.getElementById('addBookButton');
+            const modalOverlay = document.getElementById('modalOverlay');
+            
+            // Yeni Kitap Ekle butonuna tıklama olayı ekle
+            if (addBookButton) {
+                addBookButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    openModal();
+                });
+                console.log('Yeni Kitap Ekle butonu event listener eklendi');
+            } else {
+                console.error('Yeni Kitap Ekle butonu bulunamadı');
+            }
+            
+            // Overlay'e tıklama olayı ekle
+            if (modalOverlay) {
+                modalOverlay.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeModal();
+                });
+                console.log('Modal overlay event listener eklendi');
+            } else {
+                console.error('Modal overlay bulunamadı');
+            }
+
+            // Form submission
+            const addBookForm = document.getElementById('addBookForm');
+            if (addBookForm) {
+                addBookForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Form validation
+                    const requiredFields = this.querySelectorAll('[required]');
+                    let isValid = true;
+                    
+                    requiredFields.forEach(field => {
+                        if (!field.value.trim()) {
+                            isValid = false;
+                            field.classList.add('border-red-500');
+                            field.classList.add('ring-red-500');
+                        } else {
+                            field.classList.remove('border-red-500');
+                            field.classList.remove('ring-red-500');
+                        }
+                    });
+                    
+                    if (isValid) {
+                        // Kitap verilerini al
+                        const bookData = {
+                            title: document.getElementById('bookTitle').value,
+                            author: document.getElementById('author').value,
+                            isbn: document.getElementById('isbn').value,
+                            publishedDate: document.getElementById('publishedDate').value,
+                            pageCount: document.getElementById('pageCount').value,
+                            shortDescription: document.getElementById('shortDescription').value,
+                            category: document.getElementById('category').value,
+                            stock: document.getElementById('stock').value,
+                            coverImage: document.getElementById('bookCoverPreview').src.includes('data:image') ? 
+                                        '../site_resimleri/' + Math.floor(Math.random() * 5 + 1) + '.png' : 
+                                        '../site_resimleri/1.png'
+                        };
+                        
+                        // Başarı mesajı göster
+                        const successMessage = document.createElement('div');
+                        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                        successMessage.innerHTML = '<div class="flex items-center"><i class="ri-check-line mr-2"></i> Kitap başarıyla eklendi!</div>';
+                        document.body.appendChild(successMessage);
+                        
+                        // Modalı kapat - doğrudan DOM işlemi kullanarak
+                        document.getElementById('addBookModal').classList.add('hidden');
+                        document.body.classList.remove('overflow-hidden');
+                        
+                        // 3 saniye sonra başarı mesajını kaldır
+                        setTimeout(() => {
+                            successMessage.remove();
+                        }, 3000);
+                        
+                        // Formu sıfırla
+                        this.reset();
+                        const preview = document.getElementById('bookCoverPreview');
+                        if (preview) {
+                            preview.src = '../site_resimleri/placeholder.png';
+                        }
+                        
+                        // Kitapları yeniden yükle
+                        setTimeout(() => {
+                            loadBooks();
+                        }, 500);
+                    }
+                });
+            }
+            
+            // Clear filters button
+            const clearFiltersButton = document.getElementById('clearFilters');
+            if (clearFiltersButton) {
+                clearFiltersButton.addEventListener('click', function() {
+                    // Clear all filter fields
+                    const searchInput = document.getElementById('search');
+                    const authorSelect = document.getElementById('author');
+                    const categorySelect = document.getElementById('category');
+                    const stockSelect = document.getElementById('stock');
+                    
+                    if (searchInput) searchInput.value = '';
+                    if (authorSelect) authorSelect.value = '';
+                    if (categorySelect) categorySelect.value = '';
+                    if (stockSelect) stockSelect.value = '';
+                    
+                    // Reload all books
+                    loadBooks();
+                });
+            }
+        });
+    </script>
+    
+    <!-- Kitaplar JS -->
+    <script src="js/kitaplar.js"></script>
+</body>
+</html>

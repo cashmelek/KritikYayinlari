@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İletişim - Kritik Yayınları</title>
+    <meta name="description" content="Kritik Yayınları'na ulaşın. İletişim bilgilerimiz, adresimiz, telefon numaramız ve iletişim formu.">
+    <!-- Kritik CSS ilk yükleme anında görünürlüğü kontrol etmek için -->
+    <style>
+        .page-content {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        @keyframes spinner {
+            to {transform: rotate(360deg);}
+        }
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            border: 0.2rem solid #d4af37;
+            border-top-color: transparent;
+            animation: spinner 0.8s linear infinite;
+        }
+    </style>
+    <!-- Tailwind ve diğer CSS -->
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#d4af37',secondary:'#1a1a1a',success:'#10B981',error:'#EF4444'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Config -->
+    <script src="js/supabase-config.js"></script>
+    <!-- Banner Client JS -->
+    <script src="js/banners-client.js"></script>
+    <!-- İletişim Client JS -->
+    <script src="js/iletisim-client.js"></script>
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Sayfa yüklenene kadar içeriği gizle */
+        .page-content {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .page-content.loaded {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Yükleniyor göstergesi */
+        .loading-overlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .banner-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: all 0.3s ease;
+        }
+
+        /* Header için özel border */
+        .border-b-3 {
+            border-bottom-width: 3px;
+        }
+        
+        /* İletişim sayfası için özel stiller */
+        .contact-info-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .contact-info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .input-focus:focus {
+            border-color: #d4af37;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen">
+<!-- Yükleniyor göstergesi -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- Sayfa içeriği -->
+<div class="page-content" id="pageContent">
+
+<div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-secondary">Admin Girişi</h2>
+      <button class="text-gray-500 hover:text-gray-700" onclick="toggleLoginModal()">
+        <i class="ri-close-line ri-lg"></i>
+      </button>
+    </div>
+    <form id="loginForm" action="admin/index.html" method="POST" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
+        <div class="relative">
+          <i class="ri-mail-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input type="email" name="email" required maxlength="500" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary" placeholder="admin@kritikyayinlari.com">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+        <div class="relative">
+          <i class="ri-lock-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input type="password" name="password" required maxlength="500" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary" placeholder="••••••••">
+        </div>
+      </div>
+      <button type="submit" class="w-full bg-primary text-white py-2 !rounded-button font-medium hover:bg-opacity-90 transition">Giriş Yap</button>
+    </form>
+    <div id="loginMessage" class="mt-4 text-center hidden">
+      <p class="text-sm font-medium"></p>
+    </div>
+  </div>
+</div>
+
+<header class="w-full bg-white shadow-lg border-b border-gray-100 sticky top-0 z-50">
+  <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+    <div class="flex items-center">
+      <a href="anasayfa.html" class="flex items-center hover:opacity-80 transition-opacity">
+        <img src="site_resimleri/Kritik_yayınlari.png" alt="Kritik Yayınları Logo" class="h-24 w-auto">
+      </a>
+    </div>
+    <nav class="hidden md:flex space-x-8">
+      <a href="anasayfa.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Ana Sayfa</a>
+      <a href="hakkimizda.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Hakkımızda</a>
+      <a href="kitaplar.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Kitaplar</a>
+      <a href="yazarlar.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Yazarlar</a>
+      <a href="iletisim.html" class="text-primary font-bold border-b-3 border-primary py-2 text-lg">İletişim</a>
+    </nav>
+    <div class="flex items-center space-x-6">
+      <button onclick="toggleLoginModal()" class="flex items-center space-x-2 text-secondary hover:text-primary transition-colors">
+        <i class="ri-admin-line text-xl"></i>
+        <span class="text-base font-semibold">Admin</span>
+      </button>
+      <button class="block md:hidden w-10 h-10 flex items-center justify-center text-secondary hover:text-primary transition-colors" id="mobileMenuToggle">
+        <i class="ri-menu-line text-xl"></i>
+      </button>
+    </div>
+  </div>
+  <!-- Mobil Menü -->
+  <div class="md:hidden hidden bg-white w-full border-t border-gray-200 shadow-lg" id="mobileMenu">
+    <div class="container mx-auto px-4 py-3">
+      <nav class="flex flex-col space-y-1">
+        <a href="anasayfa.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Ana Sayfa</a>
+        <a href="hakkimizda.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Hakkımızda</a>
+        <a href="kitaplar.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Kitaplar</a>
+        <a href="yazarlar.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Yazarlar</a>
+        <a href="iletisim.html" class="text-primary font-bold py-3 px-3 border-b border-gray-100 text-lg">İletişim</a>
+        <a href="#" class="text-secondary hover:text-primary font-semibold py-3 px-3 text-lg transition-colors" onclick="toggleLoginModal()">Admin Paneli</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<!-- İletişim İçeriği -->
+<section class="py-12 bg-white">
+    <div class="container mx-auto px-4">
+        <div class="max-w-6xl mx-auto">
+            <!-- İletişim Bilgileri -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <!-- Sol sütun - Adres ve Çalışma Saatleri -->
+                <div class="lg:col-span-2 space-y-8">
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <div class="p-6">
+                            <h2 class="text-2xl font-bold text-secondary mb-6 relative inline-block">
+                                İletişim Bilgilerimiz
+                                <span class="absolute -bottom-1 left-0 w-full h-1 bg-primary"></span>
+                            </h2>
+                            
+                            <div class="contact-info space-y-6">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-primary mb-3">Adresimiz</h3>
+                                    <p class="address flex items-start">
+                                        <i class="ri-map-pin-line text-primary text-lg mt-1 mr-3"></i>
+                                        <span>Bağdat Caddesi No:123, Kadıköy, İstanbul</span>
+                                    </p>
+                                </div>
+                                
+                                <div>
+                                    <h3 class="text-lg font-semibold text-primary mb-3">Telefon</h3>
+                                    <ul class="phone-list space-y-2">
+                                        <li class="flex items-center">
+                                            <i class="ri-phone-line text-primary text-lg mr-3"></i>
+                                            <span>+90 212 345 67 89</span>
+                                        </li>
+                                        <li class="flex items-center">
+                                            <i class="ri-phone-line text-primary text-lg mr-3"></i>
+                                            <span>+90 216 987 65 43</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h3 class="text-lg font-semibold text-primary mb-3">E-posta</h3>
+                                    <ul class="email-list space-y-2">
+                                        <li class="flex items-center">
+                                            <i class="ri-mail-line text-primary text-lg mr-3"></i>
+                                            <span>info@kritikyayinlari.com</span>
+                                        </li>
+                                        <li class="flex items-center">
+                                            <i class="ri-mail-line text-primary text-lg mr-3"></i>
+                                            <span>satis@kritikyayinlari.com</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Çalışma Saatleri -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <div class="p-6">
+                            <h2 class="text-2xl font-bold text-secondary mb-6 relative inline-block">
+                                Çalışma Saatlerimiz
+                                <span class="absolute -bottom-1 left-0 w-full h-1 bg-primary"></span>
+                            </h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Ofis Saatleri -->
+                                <div>
+                                    <h3 class="text-lg font-semibold text-primary mb-3">Ofis</h3>
+                                    <ul class="office-hours-list space-y-2">
+                                        <li class="flex justify-between items-center">
+                                            <span class="text-gray-600">Pazartesi - Cuma</span>
+                                            <span class="font-medium">09:00 - 18:00</span>
+                                        </li>
+                                        <li class="flex justify-between items-center">
+                                            <span class="text-gray-600">Cumartesi</span>
+                                            <span class="font-medium">10:00 - 14:00</span>
+                                        </li>
+                                        <li class="flex justify-between items-center">
+                                            <span class="text-gray-600">Pazar</span>
+                                            <span class="font-medium">Kapalı</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                
+                                <!-- Kitabevi Saatleri -->
+                                <div>
+                                    <h3 class="text-lg font-semibold text-primary mb-3">Kitabevi</h3>
+                                    <ul class="bookstore-hours-list space-y-2">
+                                        <li class="flex justify-between items-center">
+                                            <span class="text-gray-600">Pazartesi - Cuma</span>
+                                            <span class="font-medium">10:00 - 20:00</span>
+                                        </li>
+                                        <li class="flex justify-between items-center">
+                                            <span class="text-gray-600">Hafta Sonu</span>
+                                            <span class="font-medium">11:00 - 19:00</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 p-3 bg-yellow-50 border-l-4 border-primary rounded-r-md hours-additional-info">
+                                <p class="text-gray-700 text-sm"><i class="ri-information-line text-primary mr-2"></i> Randevu alarak ofisimizi ziyaret edebilirsiniz.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sağ sütun - İletişim Formu ve Harita -->
+                <div class="lg:col-span-3 space-y-8">
+                    <!-- İletişim Formu -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden contact-form-container">
+                        <div class="p-6">
+                            <h2 class="text-2xl font-bold text-secondary mb-6 relative inline-block contact-form-title">
+                                Bize Mesaj Gönderin
+                                <span class="absolute -bottom-1 left-0 w-full h-1 bg-primary"></span>
+                            </h2>
+                            
+                            <form id="contactForm" class="space-y-5">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div>
+                                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Adınız Soyadınız <span class="text-red-500">*</span></label>
+                                        <input type="text" id="name" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none input-focus">
+                                    </div>
+                                    <div>
+                                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">E-posta Adresiniz <span class="text-red-500">*</span></label>
+                                        <input type="email" id="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none input-focus">
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Konu <span class="text-red-500">*</span></label>
+                                    <select id="subject" name="subject" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none input-focus">
+                                        <option value="">Lütfen bir konu seçin</option>
+                                        <option value="general">Genel Bilgi</option>
+                                        <option value="press">Basın ve Medya</option>
+                                        <option value="business">İş Birliği</option>
+                                        <option value="author">Yazar Başvurusu</option>
+                                        <option value="career">Kariyer / İş Başvurusu</option>
+                                        <option value="other">Diğer</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Mesajınız <span class="text-red-500">*</span></label>
+                                    <textarea id="message" name="message" rows="4" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none input-focus"></textarea>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <div class="flex items-center h-5">
+                                        <input id="terms" name="terms" type="checkbox" required class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                                    </div>
+                                    <div class="ml-3 text-sm">
+                                        <label for="terms" class="font-medium text-gray-700">Kişisel verilerimin işlenmesine izin veriyorum <span class="text-red-500">*</span></label>
+                                        <p class="text-gray-500 privacy-text">Verileriniz yalnızca talebinize yanıt vermek amacıyla kullanılacaktır.</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-end">
+                                    <button type="submit" class="px-6 py-2 bg-primary text-white font-medium rounded-md hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                                        Mesajı Gönder
+                                    </button>
+                                </div>
+                                
+                                <!-- Form mesaj alanı -->
+                                <div id="formMessage" style="display: none;"></div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Harita -->
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <div class="p-6">
+                            <h2 class="text-2xl font-bold text-secondary mb-6 relative inline-block">
+                                Konumumuz
+                                <span class="absolute -bottom-1 left-0 w-full h-1 bg-primary"></span>
+                            </h2>
+                            
+                            <div class="rounded-lg overflow-hidden">
+                                <div class="aspect-video bg-gray-200 w-full map-container">
+                                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d48170.84554246369!2d29.023479591057594!3d40.98892123833761!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cab82bea5b9afb%3A0x2e92a483541e2860!2sKad%C4%B1k%C3%B6y%2F%C4%B0stanbul!5e0!3m2!1str!2str!4v1684254161112!5m2!1str!2str" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="bg-gray-50 p-3 rounded-lg">
+                                    <h3 class="text-base font-semibold text-secondary mb-2">Toplu Taşıma</h3>
+                                    <ul class="space-y-1 text-sm text-gray-600">
+                                        <li class="flex items-center"><i class="ri-subway-line text-primary mr-2"></i> Kadıköy Metro - 10 dk yürüme</li>
+                                        <li class="flex items-center"><i class="ri-bus-line text-primary mr-2"></i> 14, 14A, 14ES hatları</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="bg-gray-50 p-3 rounded-lg">
+                                    <h3 class="text-base font-semibold text-secondary mb-2">Araç ile Ulaşım</h3>
+                                    <ul class="space-y-1 text-sm text-gray-600">
+                                        <li class="flex items-center"><i class="ri-parking-line text-primary mr-2"></i> Yakında ücretli otoparklar</li>
+                                        <li class="flex items-center"><i class="ri-road-map-line text-primary mr-2"></i> E-5 ve D-100 kolay erişim</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Abone Ol Bölümü -->
+<section class="py-16 bg-gradient-to-r from-secondary to-secondary/90 text-white">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div class="md:w-1/2">
+                <h2 class="text-3xl font-bold mb-4">Yeni Çıkan Kitaplardan Haberdar Olun</h2>
+                <p class="text-gray-200 mb-6">Bültenimize abone olarak yeni çıkan kitaplar, yazar etkinlikleri ve özel indirimlerden ilk siz haberdar olun.</p>
+            </div>
+            <div class="md:w-1/2 w-full">
+                <form class="flex flex-col sm:flex-row gap-3">
+                    <input type="email" placeholder="E-posta adresiniz" class="flex-1 px-4 py-3 rounded-l-lg focus:outline-none text-gray-800">
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-3 rounded-r-lg transition-colors sm:w-auto w-full">
+                        Abone Ol
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-secondary text-white pt-16 pb-8">
+    <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            <!-- Hakkımızda -->
+            <div class="flex flex-col items-start">
+                <div class="mb-4">
+                    <a href="anasayfa.html" class="inline-block hover:opacity-80 transition-opacity">
+                        <img src="site_resimleri/beyaz_Kritik_yayınlari.png" alt="Kritik Yayınları Logo" class="h-24 w-auto">
+                    </a>
+                </div>
+                <p class="text-gray-300 mb-6">Edebiyat dünyasının en seçkin eserlerini okuyucularla buluşturuyoruz.</p>
+                <div class="flex space-x-3">
+                    <a href="#" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                        <i class="ri-facebook-fill text-lg"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                        <i class="ri-twitter-fill text-lg"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                        <i class="ri-instagram-fill text-lg"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                        <i class="ri-youtube-fill text-lg"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Hızlı Bağlantılar -->
+            <div>
+                <h3 class="text-lg font-bold mb-6 relative inline-block">
+                    Hızlı Bağlantılar
+                    <span class="absolute -bottom-2 left-0 w-12 h-1 bg-primary"></span>
+                </h3>
+                <ul class="space-y-3">
+                    <li><a href="anasayfa.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>Ana Sayfa</a></li>
+                    <li><a href="kitaplar.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>Kitaplar</a></li>
+                    <li><a href="yazarlar.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>Yazarlar</a></li>
+                    <li><a href="hakkimizda.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>Hakkımızda</a></li>
+                    <li><a href="iletisim.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>İletişim</a></li>
+                </ul>
+            </div>
+            
+            <!-- İletişim -->
+            <div>
+                <h3 class="text-lg font-bold mb-6 relative inline-block">
+                    İletişim Bilgileri
+                    <span class="absolute -bottom-2 left-0 w-12 h-1 bg-primary"></span>
+                </h3>
+                <ul class="space-y-4">
+                    <li class="flex items-start">
+                        <i class="ri-map-pin-line text-primary text-lg mt-1 mr-3"></i>
+                        <span>Bağdat Caddesi No:123, Kadıköy, İstanbul</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="ri-phone-line text-primary text-lg mr-3"></i>
+                        <span>+90 212 345 67 89</span>
+                    </li>
+                    <li class="flex items-center">
+                        <i class="ri-mail-line text-primary text-lg mr-3"></i>
+                        <span>info@kritikyayinlari.com</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Alt Footer -->
+        <div class="pt-8 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center">
+            <p class="text-gray-400 mb-4 md:mb-0 text-center md:text-left">&copy; 2025 Kritik Yayınları. Tüm hakları saklıdır.</p>
+            <div class="flex flex-wrap justify-center md:justify-end gap-4 md:gap-6">
+                <a href="gizlilik-politikasi.html" class="text-gray-400 hover:text-primary transition-colors">Gizlilik Politikası</a>
+                <a href="kullanim-kosullari.html" class="text-gray-400 hover:text-primary transition-colors">Kullanım Koşulları</a>
+                <a href="cerez-politikasi.html" class="text-gray-400 hover:text-primary transition-colors">Çerez Politikası</a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobil Menü Toggle
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+            
+            if (mobileMenuToggle && mobileMenu) {
+                mobileMenuToggle.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+            
+            // Admin Login Modal
+            window.toggleLoginModal = function() {
+                const loginModal = document.getElementById('loginModal');
+                loginModal.classList.toggle('hidden');
+                loginModal.classList.toggle('flex');
+            };
+            
+            // Close modal when clicking outside
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal) {
+                loginModal.addEventListener('click', function(e) {
+                    if (e.target === loginModal) {
+                        toggleLoginModal();
+                    }
+                });
+            }
+            
+            // İletişim Formu Gönderim İşlevi
+            const contactForm = document.querySelector('form');
+            if (contactForm) {
+                contactForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    // Form doğrulama ve gönderim işlemleri burada yapılabilir
+                    alert('Mesajınız için teşekkür ederiz! En kısa sürede size dönüş yapacağız.');
+                    contactForm.reset();
+                });
+            }
+        });
+        
+        // Sayfa içeriğini yükleme ve görüntüleme fonksiyonu
+        function showPageContent() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const pageContent = document.getElementById('pageContent');
+            
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+            }
+            
+            if (pageContent) {
+                pageContent.classList.add('loaded');
+            }
+        }
+        
+        // DOMContentLoaded olayı - sayfa içeriğini göster
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(showPageContent, 300);
+        });
+        
+        // Tüm kaynaklar yüklendiğinde de kontrol et
+        window.addEventListener('load', showPageContent);
+    </script>
+</div>
+</body>
+</html>

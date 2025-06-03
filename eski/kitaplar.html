@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitaplar - Kritik Yayınları</title>
+    <meta name="description" content="Kritik Yayınları'nın tüm kitapları, yeni çıkanlar, çok satanlar ve kategorilere göre kitaplar.">
+    <!-- Kritik CSS ilk yükleme anında görünürlüğü kontrol etmek için -->
+    <style>
+        .page-content {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        @keyframes spinner {
+            to {transform: rotate(360deg);}
+        }
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            border: 0.2rem solid #d4af37;
+            border-top-color: transparent;
+            animation: spinner 0.8s linear infinite;
+        }
+    </style>
+    <!-- Tailwind ve diğer CSS -->
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>tailwind.config={theme:{extend:{colors:{primary:'#d4af37',secondary:'#1a1a1a',success:'#10B981',error:'#EF4444'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Config -->
+    <script src="js/supabase-config.js"></script>
+    <!-- Banner Client JS -->
+    <script src="js/banners-client.js"></script>
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .book-number {
+            font-size: 6rem;
+            font-weight: 200;
+            opacity: 0.2;
+            position: absolute;
+            top: -20px;
+            left: -10px;
+        }
+        /* Sayfa yüklenene kadar içeriği gizle */
+        .page-content {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .page-content.loaded {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Yükleniyor göstergesi */
+        .loading-overlay {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .banner-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.3s ease;
+        }
+
+        /* Kitap kartları için özel stiller */
+        .book-image-container {
+            background: linear-gradient(145deg, #f3f4f6, #ffffff);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .book-image-container img {
+            transition: transform 0.5s ease;
+            filter: drop-shadow(0px 5px 10px rgba(0,0,0,0.1));
+        }
+
+        .book-image-container:hover img {
+            transform: translateY(-5px) scale(1.03);
+            filter: drop-shadow(0px 10px 15px rgba(0,0,0,0.15));
+        }
+
+        /* Line clamp desteği */
+        .line-clamp-1 {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Header için özel border */
+        .border-b-3 {
+            border-bottom-width: 3px;
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen">
+<!-- Yükleniyor göstergesi -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- Sayfa içeriği -->
+<div class="page-content" id="pageContent">
+
+<div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-secondary">Admin Girişi</h2>
+      <button class="text-gray-500 hover:text-gray-700" onclick="toggleLoginModal()">
+        <i class="ri-close-line ri-lg"></i>
+      </button>
+    </div>
+    <form id="loginForm" action="admin/index.html" method="POST" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
+        <div class="relative">
+          <i class="ri-mail-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input type="email" name="email" required maxlength="500" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary" placeholder="admin@kritikyayinlari.com">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+        <div class="relative">
+          <i class="ri-lock-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input type="password" name="password" required maxlength="500" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-button focus:outline-none focus:border-primary" placeholder="••••••••">
+        </div>
+      </div>
+      <button type="submit" class="w-full bg-primary text-white py-2 !rounded-button font-medium hover:bg-opacity-90 transition">Giriş Yap</button>
+    </form>
+    <div id="loginMessage" class="mt-4 text-center hidden">
+      <p class="text-sm font-medium"></p>
+    </div>
+  </div>
+</div>
+<header class="w-full bg-white shadow-lg border-b border-gray-100 sticky top-0 z-50">
+  <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+    <div class="flex items-center">
+      <a href="anasayfa.html" class="flex items-center hover:opacity-80 transition-opacity">
+        <img src="site_resimleri/Kritik_yayınlari.png" alt="Kritik Yayınları Logo" class="h-24 w-auto">
+      </a>
+    </div>
+    <nav class="hidden md:flex space-x-8">
+      <a href="anasayfa.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Ana Sayfa</a>
+      <a href="hakkimizda.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Hakkımızda</a>
+      <a href="kitaplar.html" class="text-primary font-bold border-b-3 border-primary py-2 text-lg">Kitaplar</a>
+      <a href="yazarlar.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">Yazarlar</a>
+      <a href="iletisim.html" class="text-secondary hover:text-primary font-bold py-2 text-lg transition-colors">İletişim</a>
+    </nav>
+    <div class="flex items-center space-x-6">
+      <button onclick="toggleLoginModal()" class="flex items-center space-x-2 text-secondary hover:text-primary transition-colors">
+        <i class="ri-admin-line text-xl"></i>
+        <span class="text-base font-semibold">Admin</span>
+      </button>
+      <button class="block md:hidden w-10 h-10 flex items-center justify-center text-secondary hover:text-primary transition-colors" id="mobileMenuToggle">
+        <i class="ri-menu-line text-xl"></i>
+      </button>
+    </div>
+  </div>
+  <!-- Mobil Menü -->
+  <div class="md:hidden hidden bg-white w-full border-t border-gray-200 shadow-lg" id="mobileMenu">
+    <div class="container mx-auto px-4 py-3">
+      <nav class="flex flex-col space-y-1">
+        <a href="anasayfa.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Ana Sayfa</a>
+        <a href="hakkimizda.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Hakkımızda</a>
+        <a href="kitaplar.html" class="text-primary font-bold py-3 px-3 border-b border-gray-100 text-lg">Kitaplar</a>
+        <a href="yazarlar.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">Yazarlar</a>
+        <a href="iletisim.html" class="text-secondary hover:text-primary font-semibold py-3 px-3 border-b border-gray-100 text-lg transition-colors">İletişim</a>
+        <a href="#" class="text-secondary hover:text-primary font-semibold py-3 px-3 text-lg transition-colors" onclick="toggleLoginModal()">Admin Paneli</a>
+      </nav>
+    </div>
+  </div>
+</header>
+
+    <!-- Kitaplar Başlık -->
+    <section class="py-12 bg-gradient-to-r from-white to-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-secondary mb-2">Kitaplarımız</h1>
+                <p class="text-gray-600">Kritik Yayınları'nın tüm kitaplarını keşfedin</p>
+            </div>
+            
+            <!-- Banner Container -->
+            <div id="banner-container" class="w-full h-[400px] rounded-lg overflow-hidden bg-gradient-to-r from-primary/10 to-secondary/10 flex items-center justify-center mb-8">
+                <!-- Fallback Banner -->
+                <div class="text-center p-8">
+                    <div class="mb-4">
+                        <i class="ri-book-open-line text-6xl text-primary"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-secondary mb-2">Kitap Koleksiyonumuz</h2>
+                    <p class="text-lg text-gray-600 mb-4">Edebiyatın en seçkin eserlerini keşfedin</p>
+                    <a href="#books-section" class="inline-flex items-center bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors">
+                        Kitapları İncele
+                        <i class="ri-arrow-down-line ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Kitaplar Listesi -->
+    <section id="books-section" class="py-12 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="books-container">
+                <!-- Yükleniyor göstergesi -->
+                <div class="col-span-full flex justify-center items-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    <span class="ml-3 text-gray-600">Kitaplar yükleniyor...</span>
+                </div>
+
+                <!-- Örnek kitaplar, JavaScript ile değiştirilecek -->
+                <!-- Tüm örnek kitaplar silindi -->
+            </div>
+            
+            <!-- Sayfalama -->
+            <div class="flex justify-center mt-12" id="pagination">
+                <!-- Sayfalama burada olacak -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Abone Ol Bölümü -->
+    <section class="py-16 bg-gradient-to-r from-secondary to-secondary/90 text-white">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+                <div class="md:w-1/2">
+                    <h2 class="text-3xl font-bold mb-4">Yeni Çıkan Kitaplardan Haberdar Olun</h2>
+                    <p class="text-gray-200 mb-6">Bültenimize abone olarak yeni çıkan kitaplar, yazar etkinlikleri ve özel indirimlerden ilk siz haberdar olun.</p>
+                </div>
+                <div class="md:w-1/2 w-full">
+                    <form class="flex flex-col sm:flex-row gap-3">
+                        <input type="email" placeholder="E-posta adresiniz" class="flex-1 px-4 py-3 rounded-l-lg focus:outline-none text-gray-800">
+                        <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-3 rounded-r-lg transition-colors sm:w-auto w-full">
+                            Abone Ol
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-secondary text-white pt-16 pb-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                <!-- Hakkımızda -->
+                <div class="flex flex-col items-start">
+                    <div class="mb-4">
+                        <a href="anasayfa.html" class="inline-block hover:opacity-80 transition-opacity">
+                            <img src="site_resimleri/beyaz_Kritik_yayınlari.png" alt="Kritik Yayınları Logo" class="h-24 w-auto">
+                        </a>
+                    </div>
+                    <p class="text-gray-300 mb-6">Edebiyat dünyasının en seçkin eserlerini okuyucularla buluşturuyoruz.</p>
+                    <div class="flex space-x-3">
+                        <a href="#" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                            <i class="ri-facebook-fill text-lg"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                            <i class="ri-twitter-fill text-lg"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                            <i class="ri-instagram-fill text-lg"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                            <i class="ri-youtube-fill text-lg"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Hızlı Bağlantılar -->
+                <div>
+                    <h3 class="text-lg font-bold mb-6 relative inline-block">
+                        Hızlı Bağlantılar
+                        <span class="absolute -bottom-2 left-0 w-12 h-1 bg-primary"></span>
+                    </h3>
+                    <ul class="space-y-3">
+                        <li><a href="anasayfa.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>Ana Sayfa</a></li>
+                        <li><a href="kitaplar.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>Kitaplar</a></li>
+                        <li><a href="yazarlar.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>Yazarlar</a></li>
+                        <li><a href="hakkimizda.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>Hakkımızda</a></li>
+                        <li><a href="iletisim.html" class="text-gray-300 hover:text-primary transition-colors flex items-center"><i class="ri-arrow-right-s-line mr-2"></i>İletişim</a></li>
+                    </ul>
+                </div>
+                
+                <!-- İletişim -->
+                <div>
+                    <h3 class="text-lg font-bold mb-6 relative inline-block">
+                        İletişim Bilgileri
+                        <span class="absolute -bottom-2 left-0 w-12 h-1 bg-primary"></span>
+                    </h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <i class="ri-map-pin-line text-primary text-lg mt-1 mr-3"></i>
+                            <span>Bağdat Caddesi No:123, Kadıköy, İstanbul</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="ri-phone-line text-primary text-lg mr-3"></i>
+                            <span>+90 212 345 67 89</span>
+                        </li>
+                        <li class="flex items-center">
+                            <i class="ri-mail-line text-primary text-lg mr-3"></i>
+                            <span>info@kritikyayinlari.com</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Alt Footer -->
+            <div class="pt-8 border-t border-gray-700 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 mb-4 md:mb-0 text-center md:text-left">&copy; 2025 Kritik Yayınları. Tüm hakları saklıdır.</p>
+                <div class="flex flex-wrap justify-center md:justify-end gap-4 md:gap-6">
+                    <a href="gizlilik-politikasi.html" class="text-gray-400 hover:text-primary transition-colors">Gizlilik Politikası</a>
+                    <a href="kullanim-kosullari.html" class="text-gray-400 hover:text-primary transition-colors">Kullanım Koşulları</a>
+                    <a href="cerez-politikasi.html" class="text-gray-400 hover:text-primary transition-colors">Çerez Politikası</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobil Menü Toggle
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+            
+            if (mobileMenuToggle && mobileMenu) {
+                mobileMenuToggle.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+            
+            // Arama işlevi kaldırıldı
+            
+            // Admin Login Modal
+            window.toggleLoginModal = function() {
+                const loginModal = document.getElementById('loginModal');
+                loginModal.classList.toggle('hidden');
+                loginModal.classList.toggle('flex');
+            };
+            
+            // Admin Login Function
+            window.adminLogin = function(event) {
+                event.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                // Basit doğrulama - gerçek uygulamada güvenli bir yöntem kullanılmalıdır
+                if (username === 'admin' && password === 'admin') {
+                    window.location.href = 'admin/dashboard.html';
+                } else {
+                    alert('Hatalı kullanıcı adı veya şifre!');
+                }
+            };
+            
+            // Close modal when clicking outside
+            const loginModal = document.getElementById('loginModal');
+            if (loginModal) {
+                loginModal.addEventListener('click', function(e) {
+                    if (e.target === loginModal) {
+                        toggleLoginModal();
+                    }
+                });
+            }
+            
+            // Filtreleme kodları kaldırıldı
+            
+            // Kitapları yükle
+            loadBooks();
+            
+            // Gerçek zamanlı güncellemeler için abonelik
+            setupBooksPageRealtime();
+        });
+        
+        function displayBooks(books) {
+            const booksContainer = document.getElementById('books-container');
+            if (!booksContainer) {
+                console.error('Kitaplar container bulunamadı');
+                return;
+            }
+            
+            // Container'ı temizle
+            booksContainer.innerHTML = '';
+            
+            // Kitap yoksa mesaj göster
+            if (!books || books.length === 0) {
+                booksContainer.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-500">Henüz kitap bulunmamaktadır.</p></div>';
+                return;
+            }
+            
+            // Kitapları HTML olarak oluştur
+            const booksHTML = books.map(book => {
+                // Yazar adını daha güvenli bir şekilde al
+                let authorName = 'Bilinmeyen Yazar';
+                if (book.authors) {
+                    if (typeof book.authors === 'string') {
+                        authorName = book.authors;
+                    } else if (book.authors.name) {
+                        authorName = book.authors.name;
+                    } else if (Array.isArray(book.authors) && book.authors.length > 0) {
+                        authorName = book.authors[0].name || 'Bilinmeyen Yazar';
+                    }
+                }
+                
+                // Etiketleri belirle
+                let isNew = '';
+                let isBestseller = '';
+                
+                if (book.is_new) {
+                    isNew = '<div class="absolute top-3 right-3"><span class="bg-primary text-white text-xs px-2 py-1 rounded-full">Yeni</span></div>';
+                }
+                
+                if (book.is_bestseller) {
+                    isBestseller = '<div class="absolute top-3 left-3"><span class="flex items-center bg-white text-secondary text-xs px-2 py-1 rounded-full shadow-sm"><i class="ri-star-fill text-yellow-400 mr-1"></i> Çok Satan</span></div>';
+                }
+                
+                // Görsel URL'sini işle - ImageScaler modülü ile uyumlu hale getir
+                let coverUrl = 'site_resimleri/placeholder.png';
+                if (book.cover_url) {
+                    // Base64 verisi ise doğrudan kullan
+                    if (book.cover_url.startsWith('data:')) {
+                        coverUrl = book.cover_url;
+                    } else {
+                        // Normal URL ise kontrol et
+                        coverUrl = book.cover_url;
+                    }
+                }
+                
+                return `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden group hover:shadow-xl transition-all duration-300 h-[480px] flex flex-col">
+                        <div class="relative overflow-hidden flex-shrink-0">
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 h-80 w-full flex items-center justify-center overflow-hidden book-image-container">
+                                <img src="${coverUrl}" alt="${book.title}" class="max-h-full max-w-full object-contain p-2 transition-all duration-300 group-hover:scale-105" crossorigin="anonymous" onerror="this.src='site_resimleri/placeholder.png'">
+                            </div>
+                            ${isNew}
+                            ${isBestseller}
+                        </div>
+                        <div class="p-4 flex-1 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-secondary mb-2 line-clamp-2 leading-tight">${book.title}</h3>
+                                <p class="text-sm text-gray-600 mb-3 font-medium">${authorName}</p>
+                            </div>
+                            <div class="flex justify-between items-center mt-auto">
+                                <a href="kitap-detay.html?id=${book.id}" class="text-primary hover:underline font-medium">Detaylar</a>
+                                <a href="kitap-detay.html?id=${book.id}" class="text-secondary hover:text-primary transition-colors">
+                                    <i class="ri-arrow-right-circle-line text-xl"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Kitapları sayfaya ekle
+            booksContainer.innerHTML = booksHTML;
+        }
+        
+        async function loadBooks() {
+            const booksContainer = document.getElementById('books-container');
+            if (!booksContainer) return;
+            
+            try {
+                // Yükleniyor göstergesini aktif et
+                booksContainer.innerHTML = `
+                    <div class="col-span-full flex justify-center items-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                        <span class="ml-3 text-gray-600">Kitaplar yükleniyor...</span>
+                    </div>
+                `;
+                
+                // Supabase bağlantısını kontrol et
+                if (!window.supabaseClient) {
+                    console.error('Supabase bağlantısı bulunamadı');
+                    throw new Error('Supabase bağlantısı bulunamadı');
+                }
+                
+                // Kitapları Supabase'den getir
+                const { data: books, error } = await window.supabaseClient
+                    .from('books')
+                    .select('*, authors(*)')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!books || books.length === 0) {
+                    booksContainer.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-500">Henüz kitap bulunmamaktadır.</p></div>';
+                    return;
+                }
+                
+                // Kitapları göster
+                displayBooks(books);
+                
+                // Sayfalama oluştur
+                createPagination(books.length);
+                
+            } catch (error) {
+                console.error('Kitaplar yüklenirken hata oluştu:', error);
+                booksContainer.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-red-500">Kitaplar yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.</p></div>';
+            }
+        }
+        
+        // Kitaplar sayfası için gerçek zamanlı güncellemeler
+        function setupBooksPageRealtime() {
+            console.log('Kitaplar sayfası gerçek zamanlı güncellemeler başlatılıyor...');
+            
+            // Kitap değişikliklerini dinle
+            window.addEventListener('book-changed', async (event) => {
+                console.log('Kitap değişikliği algılandı, kitaplar yeniden yükleniyor...');
+                await loadBooks();
+            });
+            
+            // Broadcast kanalını da dinle
+            if (typeof setupBroadcastListener === 'function') {
+                setupBroadcastListener();
+            }
+        }
+        
+        // Filtreleme fonksiyonu kaldırıldı
+        
+        function createPagination(totalBooks) {
+            const paginationContainer = document.getElementById('pagination');
+            if (!paginationContainer) return;
+            
+            const booksPerPage = 12;
+            const totalPages = Math.ceil(totalBooks / booksPerPage);
+            
+            if (totalPages <= 1) {
+                paginationContainer.style.display = 'none';
+                return;
+            }
+            
+            let paginationHTML = '';
+            
+            paginationHTML += '<div class="flex space-x-2">';
+            paginationHTML += '<button class="w-10 h-10 rounded-full flex items-center justify-center border border-gray-300 text-gray-500 disabled:opacity-50" disabled><i class="ri-arrow-left-s-line"></i></button>';
+            
+            for (let i = 1; i <= totalPages; i++) {
+                paginationHTML += `<button class="w-10 h-10 rounded-full flex items-center justify-center ${i === 1 ? 'bg-primary text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'}">${i}</button>`;
+            }
+            
+            paginationHTML += '<button class="w-10 h-10 rounded-full flex items-center justify-center border border-gray-300 text-gray-700 hover:bg-gray-50"><i class="ri-arrow-right-s-line"></i></button>';
+            paginationHTML += '</div>';
+            
+            paginationContainer.innerHTML = paginationHTML;
+            
+            // Sayfalama butonlarına olay dinleyicileri ekle
+            const pageButtons = paginationContainer.querySelectorAll('button:not(:first-child):not(:last-child)');
+            pageButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Aktif sayfayı değiştir
+                    const activeButton = paginationContainer.querySelector('.bg-primary.text-white');
+                    if (activeButton) {
+                        activeButton.classList.remove('bg-primary', 'text-white');
+                        activeButton.classList.add('border', 'border-gray-300', 'text-gray-700', 'hover:bg-gray-50');
+                    }
+                    this.classList.remove('border', 'border-gray-300', 'text-gray-700', 'hover:bg-gray-50');
+                    this.classList.add('bg-primary', 'text-white');
+                    
+                    // Sayfa değişikliği işlemleri burada yapılacak
+                    // Bu örnek için basit bir sayfalama yapmıyoruz
+                });
+            });
+        }
+    </script>
+    
+    <!-- Supabase Yapılandırma ve API -->
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Config -->
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-api.js"></script>
+    <script src="js/supabase-realtime.js"></script>
+    
+    <!-- Sayfa yüklendiğinde kitapları yükle ve gerçek zamanlı güncelleme fonksiyonunu çağır -->
+    <script>
+        // Sayfa içeriğini yükleme ve görüntüleme fonksiyonu
+        function showPageContent() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const pageContent = document.getElementById('pageContent');
+            
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+            }
+            
+            if (pageContent) {
+                pageContent.classList.add('loaded');
+            }
+        }
+        
+        // DOMContentLoaded olayı - önce sayfa içeriğini gizli tut
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Tüm işlemler tamamlanana kadar overlay'i göster
+                
+                // Banner'ları yükle
+                if (typeof loadPageBanners === 'function') {
+                    await loadPageBanners('books');
+                }
+                
+                // Kitapları yükle
+                await loadBooks();
+                
+            // Gerçek zamanlı güncellemeleri başlat
+            if (typeof setupBooksPageRealtime === 'function') {
+                setupBooksPageRealtime();
+                    console.log('Kitaplar sayfası gerçek zamanlı güncellemeler başlatıldı');
+            } else {
+                console.error('setupBooksPageRealtime fonksiyonu bulunamadı');
+            }
+                
+                // Tüm işlemler tamamlandığında içeriği göster
+                setTimeout(showPageContent, 300);
+            } catch (error) {
+                console.error('Sayfa yüklenirken hata:', error);
+                showPageContent(); // Hata olsa bile içeriği göster
+            }
+        });
+        
+        // Tüm kaynaklar yüklendiğinde de kontrol et
+        window.addEventListener('load', showPageContent);
+    </script>
+</div>
+</body>
+</html>

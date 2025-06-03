@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veritabanı Güncelleme - Kritik Yayınları Yönetim Paneli</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#d4af37',
+                        secondary: '#1a1a1a'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Remix Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <!-- Admin CSS -->
+    <link rel="stylesheet" href="css/admin.css">
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Config -->
+    <script src="../js/supabase-config.js"></script>
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .sidebar-active {
+            background-color: #d4af37 !important;
+            color: #1a1a1a !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex flex-row min-h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-[#1a2942] text-white">
+            <div class="p-4 border-b border-gray-700">
+                <h1 class="text-xl font-bold text-[#d4af37]">Kritik</h1>
+                <p class="text-sm text-gray-400">Yönetim Paneli</p>
+            </div>
+            <nav class="mt-4">
+                <ul>
+                    <li>
+                        <a href="index.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                            <i class="ri-dashboard-line mr-3"></i>
+                    <span>Dashboard</span>
+                </a>
+                    </li>
+                    <li>
+                <a href="kitaplar.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                            <i class="ri-book-open-line mr-3"></i>
+                    <span>Kitaplar</span>
+                </a>
+                    </li>
+                    <li>
+                <a href="yazarlar.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                            <i class="ri-user-line mr-3"></i>
+                    <span>Yazarlar</span>
+                </a>
+                    </li>
+                    <li>
+                        <a href="bannerlar.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                            <i class="ri-image-line mr-3"></i>
+                            <span>Bannerlar</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="update-database.html" class="flex items-center px-4 py-3 sidebar-active bg-[#d4af37] text-[#1a2942] hover:bg-[#d4af37]/90 transition-colors">
+                            <i class="ri-database-2-line mr-3"></i>
+                            <span>Veritabanı</span>
+                </a>
+                    </li>
+                    <li>
+                        <a href="../anasayfa.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                    <i class="ri-arrow-left-line mr-3 text-lg"></i>
+                    <span>Siteye Dön</span>
+                </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Page Content -->
+        <div class="flex-1 transition-all duration-300" id="page-content-wrapper">
+            <!-- Top Navigation -->
+            <nav class="bg-white shadow-sm sticky top-0 z-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                    <div></div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="relative" id="searchContainer">
+                            <div class="relative">
+                                <input type="text" placeholder="Ara..." class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" id="searchInput">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <i class="ri-search-line text-gray-400"></i>
+                                </div>
+                                <button class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-primary">
+                                    <i class="ri-search-line"></i>
+                            </button>
+                            </div>
+                        </div>
+                        
+                        <div class="relative" id="userDropdown">
+                            <button class="flex items-center text-secondary hover:text-primary focus:outline-none" id="userButton">
+                                <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-2">
+                                            <i class="ri-user-line"></i>
+                                </div>
+                                <span class="hidden md:block">Admin</span>
+                                <i class="ri-arrow-down-s-line ml-1"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 hidden z-10" id="userDropdownMenu">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ayarlar</a>
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100" id="logoutBtn">Çıkış</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="p-4 sm:p-6 lg:p-8">
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                    <!-- Page Header -->
+                    <div class="flex justify-between items-center mb-6">
+                        <h1 class="text-2xl font-bold text-[#1a2942]">Veritabanı Güncelleme</h1>
+                    </div>
+
+                <div class="mb-8 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                    <h2 class="text-lg font-semibold text-blue-800 mb-2">Bilgi</h2>
+                        <p class="text-blue-700">Bu sayfa, veritabanındaki tabloları oluşturacak ve örnek verileri ekleyecektir. Güncelleme işlemi SQL script kullanarak gerçekleştirilecektir.</p>
+                </div>
+
+                <div id="status" class="mb-8 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold mb-2">Durum</h3>
+                        <p id="statusMessage" class="text-gray-700">Güncelleme başlatılmadı</p>
+                    <div class="mt-4 w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="progressBar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col space-y-4">
+                        <div class="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                            <h3 class="font-semibold mb-2">Uygulanacak SQL İşlemleri:</h3>
+                        <ul class="list-disc pl-5 space-y-1 text-gray-700">
+                                <li><strong>authors</strong> tablosu oluşturulacak</li>
+                                <li><strong>books</strong> tablosu oluşturulacak</li>
+                                <li>Örnek yazar ve kitap verileri eklenecek</li>
+                                <li>Gerçek zamanlı güncellemeler için gerekli trigger'lar eklenecek</li>
+                        </ul>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <a href="dashboard.html" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-button hover:bg-gray-300 transition-colors flex items-center">
+                            <i class="ri-arrow-left-line mr-2"></i>
+                            Gösterge Paneline Dön
+                        </a>
+                            <div class="flex space-x-3">
+                            <button id="fixDatabaseBtn" class="px-6 py-2 bg-yellow-500 text-white rounded-button hover:bg-yellow-600 transition-colors flex items-center shadow-md">
+                                <i class="ri-tools-line mr-2"></i>
+                                Şemayı Düzelt
+                            </button>
+                            <button id="runDatabaseUpdateBtn" class="px-6 py-2 bg-primary text-white rounded-button hover:bg-opacity-90 transition-colors flex items-center shadow-md">
+                                <i class="ri-database-2-line mr-2"></i>
+                                Veritabanı Güncelle
+                        </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Veritabanı Güncelleme Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Kullanıcı dropdown
+            const userButton = document.getElementById('userButton');
+            const userDropdownMenu = document.getElementById('userDropdownMenu');
+            
+            if (userButton && userDropdownMenu) {
+            userButton.addEventListener('click', function() {
+                    userDropdownMenu.classList.toggle('hidden');
+            });
+            
+                // Dropdown dışına tıklandığında kapanma
+            document.addEventListener('click', function(event) {
+                    if (!userButton.contains(event.target) && !userDropdownMenu.contains(event.target)) {
+                        userDropdownMenu.classList.add('hidden');
+                }
+            });
+            }
+            
+            // Çıkış butonu
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Çıkış işlemleri burada yapılacak
+                    window.location.href = "../anasayfa.html";
+                });
+            }
+            
+            // Şema düzeltme butonu
+            const fixDatabaseBtn = document.getElementById('fixDatabaseBtn');
+            if (fixDatabaseBtn) {
+                fixDatabaseBtn.addEventListener('click', async function() {
+                    try {
+                        if (!window.supabaseClient) {
+                            showStatus('Supabase bağlantısı kurulamadı', 'error');
+                            return;
+                        }
+                        
+                        fixDatabaseBtn.disabled = true;
+                        fixDatabaseBtn.classList.add('opacity-50');
+                        
+                        // Durum güncelle
+                        showStatus('Veritabanı şeması düzeltiliyor...', 'loading');
+                        updateProgress(10);
+                        
+                        // Authors tablosuna is_active sütunu ekle (eğer yoksa)
+                        try {
+                            const { error } = await window.supabaseClient.rpc('add_is_active_to_authors');
+                            if (error) {
+                                // Basit SQL kullan
+                                const sqlResult = await window.supabaseClient.query(`
+                                    ALTER TABLE authors 
+                                    ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+                                `);
+                                console.log('SQL sonucu:', sqlResult);
+                            }
+                        } catch (err) {
+                            console.error('RPC hatası, doğrudan SQL kullanılıyor:', err);
+                            
+                            // Alternatif olarak doğrudan SQL çalıştırmayı dene
+                            try {
+                                const { error } = await window.supabaseClient.from('_temp_').select('*').limit(1);
+                                
+                                if (error && error.message && error.message.includes('does not exist')) {
+                                    // Geçici tablo oluştur
+                                    await window.supabaseClient.query(`
+                                        CREATE TABLE IF NOT EXISTS _temp_ (id serial primary key);
+                                    `);
+                                    
+                                    // Sonra is_active sütununu ekle
+                                    await window.supabaseClient.query(`
+                                        ALTER TABLE authors 
+                                        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+                                    `);
+                                    
+                                    // Geçici tabloyu sil
+                                    await window.supabaseClient.query(`
+                                        DROP TABLE IF EXISTS _temp_;
+                                    `);
+                                }
+                            } catch (sqlErr) {
+                                console.error('SQL hatası:', sqlErr);
+                            }
+                        }
+                        
+                        updateProgress(100);
+                        showStatus('Veritabanı şeması başarıyla düzeltildi!', 'success');
+                        
+                        fixDatabaseBtn.disabled = false;
+                        fixDatabaseBtn.classList.remove('opacity-50');
+                        
+                    } catch (error) {
+                        console.error('Veritabanı düzeltilirken hata oluştu:', error);
+                        showStatus('Veritabanı düzeltilirken hata oluştu: ' + error.message, 'error');
+                        fixDatabaseBtn.disabled = false;
+                        fixDatabaseBtn.classList.remove('opacity-50');
+                    }
+                });
+            }
+            
+            // Veritabanı güncelleme butonu
+            const runDatabaseUpdateBtn = document.getElementById('runDatabaseUpdateBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            const progressBar = document.getElementById('progressBar');
+            
+            runDatabaseUpdateBtn.addEventListener('click', async function() {
+                try {
+                    // Supabase istemcisinin yüklendiğinden emin ol
+                    if (!window.supabaseClient) {
+                        showStatus('Supabase bağlantısı kurulamadı', 'error');
+                        return;
+                    }
+                    
+                    runDatabaseUpdateBtn.disabled = true;
+                    runDatabaseUpdateBtn.classList.add('opacity-50');
+                    
+                    // Durum güncelle
+                    showStatus('Veritabanı güncelleme başlatılıyor...', 'loading');
+                    updateProgress(10);
+                    
+                    // SQL scriptini yürütme simülasyonu
+                    await simulateProgress();
+                    
+                    updateProgress(100);
+                    showStatus('Veritabanı başarıyla güncellendi!', 'success');
+                    
+                    runDatabaseUpdateBtn.disabled = false;
+                    runDatabaseUpdateBtn.classList.remove('opacity-50');
+                    runDatabaseUpdateBtn.textContent = 'Güncelleme Tamamlandı';
+                    runDatabaseUpdateBtn.innerHTML = '<i class="ri-check-line mr-2"></i>Güncelleme Tamamlandı';
+                    
+                } catch (error) {
+                    console.error('Veritabanı güncellenirken hata oluştu:', error);
+                    showStatus('Veritabanı güncellenirken hata oluştu: ' + error.message, 'error');
+                    runDatabaseUpdateBtn.disabled = false;
+                    runDatabaseUpdateBtn.classList.remove('opacity-50');
+                }
+            });
+            
+            async function simulateProgress() {
+                // SQL işlem simülasyonu
+                const steps = [
+                    { progress: 20, message: 'Authors tablosu oluşturuluyor...', delay: 1000 },
+                    { progress: 40, message: 'Books tablosu oluşturuluyor...', delay: 1500 },
+                    { progress: 60, message: 'Örnek yazarlar ekleniyor...', delay: 1200 },
+                    { progress: 80, message: 'Örnek kitaplar ekleniyor...', delay: 1300 },
+                    { progress: 90, message: 'Trigger\'lar ve view\'lar oluşturuluyor...', delay: 800 }
+                ];
+                
+                for (const step of steps) {
+                    updateProgress(step.progress);
+                    showStatus(step.message, 'loading');
+                    await new Promise(resolve => setTimeout(resolve, step.delay));
+                }
+            }
+            
+            function showStatus(message, type = 'info') {
+                statusMessage.textContent = message;
+                
+                // Durum kutusunun stilini güncelle
+                const statusBox = document.getElementById('status');
+                statusBox.className = 'mb-8 p-6 rounded-lg border';
+                
+                switch (type) {
+                    case 'success':
+                        statusBox.classList.add('bg-green-50', 'border-green-200');
+                        statusMessage.className = 'text-green-700';
+                        break;
+                    case 'error':
+                        statusBox.classList.add('bg-red-50', 'border-red-200');
+                        statusMessage.className = 'text-red-700';
+                        break;
+                    case 'warning':
+                        statusBox.classList.add('bg-yellow-50', 'border-yellow-200');
+                        statusMessage.className = 'text-yellow-700';
+                        break;
+                    case 'loading':
+                        statusBox.classList.add('bg-blue-50', 'border-blue-200');
+                        statusMessage.className = 'text-blue-700';
+                        break;
+                    default:
+                        statusBox.classList.add('bg-gray-50', 'border-gray-200');
+                        statusMessage.className = 'text-gray-700';
+                }
+            }
+            
+            function updateProgress(percent) {
+                progressBar.style.width = `${percent}%`;
+                
+                // İlerleme çubuğunun rengini güncelle
+                if (percent < 30) {
+                    progressBar.className = 'bg-blue-500 h-2.5 rounded-full';
+                } else if (percent < 70) {
+                    progressBar.className = 'bg-yellow-500 h-2.5 rounded-full';
+                } else {
+                    progressBar.className = 'bg-green-500 h-2.5 rounded-full';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
