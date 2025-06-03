@@ -10,12 +10,10 @@
     { "src": "**/*.js", "use": "@vercel/static" },
     { "src": "images/**", "use": "@vercel/static" }
   ],
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/", "dest": "/anasayfa.html" },
-    { "src": "/admin", "dest": "/admin/index.html" },
-    { "src": "/admin/(.*)", "dest": "/admin/$1" },
-    { "src": "/(.*)", "dest": "/$1" }
+  "rewrites": [
+    { "source": "/", "destination": "/anasayfa.html" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/:path*", "destination": "/admin/:path*" }
   ],
   "cleanUrls": true,
   "trailingSlash": false
