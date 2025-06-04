@@ -51,12 +51,14 @@ async function loadPageBanners(location = 'home') {
                             <img src="${banner.image_url}" alt="${banner.title}" class="w-full h-full object-cover">
                             <div class="absolute inset-0 bg-black bg-opacity-40"></div>
                         </div>
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <div class="text-center text-white px-4">
-                                <h2 class="text-3xl md:text-4xl font-bold mb-4">${banner.title}</h2>
-                                ${banner.subtitle ? `<p class="text-xl mb-4">${banner.subtitle}</p>` : ''}
-                                ${banner.description ? `<p class="text-lg mb-6 max-w-2xl">${banner.description}</p>` : ''}
-                                ${banner.link ? `<a href="${banner.link}" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium transition-colors">Detaylar</a>` : ''}
+                        <div class="absolute inset-0 flex items-center justify-start">
+                            <div class="container mx-auto px-8">
+                                <div class="text-left text-white max-w-2xl">
+                                    <h2 class="text-3xl md:text-4xl font-bold mb-4">${banner.title}</h2>
+                                    ${banner.subtitle ? `<p class="text-xl mb-4">${banner.subtitle}</p>` : ''}
+                                    ${banner.description ? `<p class="text-lg mb-6">${banner.description}</p>` : ''}
+                                    ${banner.link ? `<a href="${banner.link}" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium transition-colors">Detaylar</a>` : ''}
+                                </div>
                             </div>
                         </div>
                     </div>
