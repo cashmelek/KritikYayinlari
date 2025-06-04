@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBanners();
     
     // Modal açma butonu
-    const addBannerBtn = document.getElementById('addBannerBtn');
+    const addBannerBtn = document.getElementById('addBannerButton');
     if (addBannerBtn) {
         addBannerBtn.addEventListener('click', () => {
             openAddBannerModal();
@@ -232,7 +232,7 @@ function initializeImageUpload() {
 async function loadBanners() {
     try {
         // Yükleniyor göstergesini göster
-        const bannerContainer = document.getElementById('bannerContainer');
+        const bannerContainer = document.getElementById('bannersContainer');
         if (bannerContainer) {
             bannerContainer.innerHTML = `
                 <div class="col-span-full flex justify-center items-center py-12">
@@ -245,7 +245,7 @@ async function loadBanners() {
         // Supabase'den bannerları çek
         const { data, error } = await supabaseClient
             .from('banners')
-            .select('id, title, subtitle, description, image_url, link, active, order_number, target_type, target_id, click_count, created_at, updated_at')
+            .select('id, title, subtitle, description, image_url, link, is_active, order_number, target_type, target_id, click_count, created_at, updated_at')
             .order('order_number', { ascending: true });
         
         if (error) {
@@ -271,7 +271,7 @@ async function loadBanners() {
         showNotification('Bannerlar yüklenirken bir hata oluştu: ' + error.message, 'error');
         
         // Hata durumunda boş bir konteyner göster
-        const bannerContainer = document.getElementById('bannerContainer');
+        const bannerContainer = document.getElementById('bannersContainer');
         if (bannerContainer) {
             bannerContainer.innerHTML = `
                 <div class="col-span-full text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
@@ -298,6 +298,7 @@ function updateBannerStats() {
     const totalBannerElement = document.querySelector('.banner-stats-total');
     const activeBannerElement = document.querySelector('.banner-stats-active');
     const inactiveBannerElement = document.querySelector('.banner-stats-inactive');
+    const totalClicksElement = document.querySelector('.banner-stats-clicks');
     
     if (totalBannerElement) {
         totalBannerElement.textContent = banners.length;
@@ -305,20 +306,26 @@ function updateBannerStats() {
     
     if (activeBannerElement) {
         // Aktif banner sayısı
-        const activeBanners = banners.filter(banner => banner.active === true);
+        const activeBanners = banners.filter(banner => banner.is_active === true);
         activeBannerElement.textContent = activeBanners.length;
     }
     
     if (inactiveBannerElement) {
         // Pasif banner sayısı
-        const inactiveBanners = banners.filter(banner => banner.active === false);
+        const inactiveBanners = banners.filter(banner => banner.is_active === false);
         inactiveBannerElement.textContent = inactiveBanners.length;
+    }
+    
+    if (totalClicksElement) {
+        // Toplam tıklama sayısı
+        const totalClicks = banners.reduce((total, banner) => total + (banner.click_count || 0), 0);
+        totalClicksElement.textContent = totalClicks;
     }
 }
 
 // Bannerları render et
 function renderBanners(bannersToRender) {
-    const bannerContainer = document.getElementById('bannerContainer');
+    const bannerContainer = document.getElementById('bannersContainer');
     if (!bannerContainer) return;
     
     if (!bannersToRender || bannersToRender.length === 0) {
@@ -346,7 +353,7 @@ function renderBanners(bannersToRender) {
     bannersToRender.forEach(banner => {
         const createdDate = new Date(banner.created_at).toLocaleDateString('tr-TR');
         const imageUrl = banner.image_url || 'https://via.placeholder.com/300x150?text=Banner+G%C3%B6rseli';
-        const isActive = banner.active;
+        const isActive = banner.is_active;
         
         // Hedef türü ve bağlantı bilgisi
         let targetInfo = '';
@@ -480,12 +487,12 @@ async function toggleBannerStatus(bannerId) {
         }
         
         // Durumu tersine çevir
-        const newStatus = !banner.active;
+        const newStatus = !banner.is_active;
         
         // Supabase'de güncelle
         const { error } = await supabaseClient
             .from('banners')
-            .update({ active: newStatus, updated_at: new Date().toISOString() })
+            .update({ is_active: newStatus, updated_at: new Date().toISOString() })
             .eq('id', bannerId);
         
         if (error) {
@@ -493,7 +500,7 @@ async function toggleBannerStatus(bannerId) {
         }
         
         // Yerel banner listesini güncelle
-        banner.active = newStatus;
+        banner.is_active = newStatus;
         
         // Bildirim göster
         showNotification(`Banner durumu ${newStatus ? 'aktif' : 'pasif'} olarak değiştirildi.`, 'success');
@@ -536,8 +543,9 @@ async function deleteBanner(bannerId) {
 
 // Modalı kapat
 function closeModal() {
-    const modal = document.getElementById('bannerModal');
+    const modal = document.getElementById('addBannerModal');
     if (modal) {
+        modal.classList.add('hidden');
         modal.classList.remove('active');
         document.body.style.overflow = 'auto'; // Sayfa scrollunu aktifleştir
     }
@@ -546,7 +554,7 @@ function closeModal() {
 // Banner ekleme modalını aç
 function openAddBannerModal() {
     // Form ve modal elementlerini al
-    const modal = document.getElementById('bannerModal');
+    const modal = document.getElementById('addBannerModal');
     const form = document.getElementById('addBannerForm');
     const modalTitle = document.getElementById('modalTitle');
     
@@ -573,16 +581,17 @@ function openAddBannerModal() {
     }
     
     // Modalı göster
-        modal.classList.add('active');
+    modal.classList.remove('hidden');
+    modal.classList.add('active');
         
     // ESC tuşu ile kapatma
-        const escKeyHandler = (e) => {
-            if (e.key === 'Escape') {
-                closeModal();
-                document.removeEventListener('keydown', escKeyHandler);
-            }
-        };
-        document.addEventListener('keydown', escKeyHandler);
+    const escKeyHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            document.removeEventListener('keydown', escKeyHandler);
+        }
+    };
+    document.addEventListener('keydown', escKeyHandler);
 }
 
 // Banner düzenleme işlemi
@@ -616,7 +625,7 @@ async function editBanner(bannerId) {
             document.getElementById('bannerOrder').value = banner.order_number || '';
             
             // Aktif durumu
-            document.getElementById('bannerActive').checked = banner.active || false;
+            document.getElementById('isActive').checked = banner.is_active || false;
             
             // Target type ve id ayarla
             const targetTypeSelect = document.getElementById('bannerTargetType');
@@ -652,12 +661,12 @@ async function editBanner(bannerId) {
         }
         
         // Modalı aç
-        const modal = document.getElementById('bannerModal');
+        const modal = document.getElementById('addBannerModal');
         if (modal) {
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
             
-            // Escape tuşu ile modalı kapatma
+            // ESC tuşu ile modalı kapatma
             const escKeyHandler = (e) => {
                 if (e.key === 'Escape') {
                     closeModal();
@@ -697,7 +706,7 @@ async function handleFormSubmit(e) {
         const targetId = form.querySelector('#bannerTargetId')?.value.trim();
         const link = form.querySelector('#bannerLink')?.value.trim();
         const orderNumber = parseInt(form.querySelector('#bannerOrder')?.value || '0');
-        const isActive = form.querySelector('#bannerActive')?.checked || false;
+        const isActive = form.querySelector('#isActive')?.checked || false;
         
         // Validation
         if (!title) {
@@ -745,7 +754,7 @@ async function handleFormSubmit(e) {
             title,
             subtitle,
             description,
-            active: isActive,
+            is_active: isActive,
             order_number: orderNumber,
             updated_at: new Date().toISOString()
         };
@@ -948,7 +957,7 @@ function filterBanners() {
         const matchesLocation = !locationFilter || banner.location === locationFilter;
         
         // Durum filtresi
-        const matchesStatus = !statusFilter || banner.active === (statusFilter === 'active');
+        const matchesStatus = !statusFilter || banner.is_active === (statusFilter === 'active');
         
         return matchesSearch && matchesLocation && matchesStatus;
     });
