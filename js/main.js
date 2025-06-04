@@ -58,7 +58,7 @@ async function fetchBanners() {
         const { data, error } = await supabaseClient
             .from('banners')
             .select('*')
-            .eq('active', true)
+            .eq('is_active', true)
             .order('order_number', { ascending: true });
             
         if (error) {
@@ -105,14 +105,23 @@ async function loadBooks() {
         
         bookGrid.innerHTML = books.map(book => `
             <div class="book-card" data-book-id="${book.id}">
-                <img src="${book.image_url || book.cover || 'images/placeholder-book.jpg'}" alt="${book.title}" loading="lazy">
+                <div class="book-cover">
+                    <img src="${book.cover_url || 'images/placeholder-book.jpg'}" 
+                         alt="${book.title}" 
+                         loading="lazy"
+                         onerror="this.src='images/placeholder-book.jpg'; this.onerror=null;"
+                         onload="this.style.opacity='1'; this.style.animation='fadeInImage 0.5s ease-in-out forwards';">
+                </div>
                 <div class="book-info">
                     <h3>${book.title}</h3>
-                    <p class="author">${book.authors ? book.authors.name : book.author || 'Bilinmeyen Yazar'}</p>
+                    <p class="author">${book.authors ? book.authors.name : 'Bilinmeyen Yazar'}</p>
                     <button class="btn view-details" data-book-id="${book.id}">İncele</button>
                 </div>
             </div>
         `).join('');
+        
+        // Görsel yükleme optimizasyonlarını uygula
+        optimizeBookImages();
         
         // Detay butonlarına tıklama olayı ekle
         document.querySelectorAll('.view-details').forEach(button => {
@@ -142,7 +151,7 @@ async function loadAuthors() {
         
         authorGrid.innerHTML = authors.map(author => `
             <div class="author-card" data-author-id="${author.id}">
-                <img src="${author.image_url || author.image || 'https://i.pravatar.cc/150?img=' + author.id}" alt="${author.name}" loading="lazy">
+                <img src="${author.photo_url || 'https://i.pravatar.cc/150?img=' + author.id}" alt="${author.name}" loading="lazy">
                 <h3>${author.name}</h3>
                 <p class="bio">${(author.bio || '').substring(0, 150)}...</p>
                 <button class="btn view-author" data-author-id="${author.id}">Kitapları Gör</button>
@@ -159,20 +168,6 @@ async function loadAuthors() {
     } catch (error) {
         authorGrid.innerHTML = `<div class="error">Yazarlar yüklenirken bir hata oluştu: ${error.message}</div>`;
     }
-}
-
-// Kitap detaylarını göster
-function showBookDetails(bookId) {
-    // Burada kitap detay sayfasına yönlendirme yapılabilir
-    // Veya bir modal açılabilir
-    alert(`Kitap ID: ${bookId} detayları gösterilecek`);
-}
-
-// Yazarın kitaplarını göster
-function showAuthorBooks(authorId) {
-    // Burada yazarın kitaplarını listeleyen bir sayfaya yönlendirme yapılabilir
-    // Veya bir modal açılabilir
-    alert(`Yazar ID: ${authorId} kitapları listelenecek`);
 }
 
 // Banner yükleme fonksiyonu
@@ -197,8 +192,8 @@ async function loadBanners() {
                 <div class="container">
                     <div class="slide-content">
                         <h2>${banner.title}</h2>
-                        <p>${banner.subtitle || banner.description || ''}</p>
-                        ${banner.link_url ? `<a href="${banner.link_url}" class="btn btn-primary">Detaylar</a>` : ''}
+                        <p>${banner.description || ''}</p>
+                        ${banner.link ? `<a href="${banner.link}" class="btn btn-primary">Detaylar</a>` : ''}
                     </div>
                 </div>
             </div>
@@ -210,6 +205,20 @@ async function loadBanners() {
     } catch (error) {
         console.error('Banner yüklenirken hata oluştu:', error);
     }
+}
+
+// Kitap detaylarını göster
+function showBookDetails(bookId) {
+    // Burada kitap detay sayfasına yönlendirme yapılabilir
+    // Veya bir modal açılabilir
+    alert(`Kitap ID: ${bookId} detayları gösterilecek`);
+}
+
+// Yazarın kitaplarını göster
+function showAuthorBooks(authorId) {
+    // Burada yazarın kitaplarını listeleyen bir sayfaya yönlendirme yapılabilir
+    // Veya bir modal açılabilir
+    alert(`Yazar ID: ${authorId} kitapları listelenecek`);
 }
 
 // Sayfa yüklendiğinde çalışacak kodlar
@@ -391,5 +400,128 @@ function updateSliderDots() {
         });
         
         dotsContainer.appendChild(dot);
+    });
+}
+
+// Kitap görsellerini optimize et
+function optimizeBookImages() {
+    const bookImages = document.querySelectorAll('.book-card img');
+    
+    bookImages.forEach((img, index) => {
+        // Lazy loading için Intersection Observer kullan
+        if ('IntersectionObserver' in window) {
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const image = entry.target;
+                        
+                        // Görsel yükleme başladığında placeholder göster
+                        if (!image.complete) {
+                            showImagePlaceholder(image);
+                        }
+                        
+                        // Görsel yüklendiğinde optimizasyonları uygula
+                        image.addEventListener('load', function() {
+                            hideImagePlaceholder(this);
+                            applyImageOptimizations(this);
+                        });
+                        
+                        // Hata durumunda placeholder göster
+                        image.addEventListener('error', function() {
+                            hideImagePlaceholder(this);
+                            this.src = 'images/placeholder-book.jpg';
+                        });
+                        
+                        observer.unobserve(image);
+                    }
+                });
+            }, {
+                rootMargin: '50px 0px',
+                threshold: 0.1
+            });
+            
+            imageObserver.observe(img);
+        }
+        
+        // Progressive loading için küçük bir gecikme ekle
+        setTimeout(() => {
+            if (img.src && !img.complete) {
+                showImagePlaceholder(img);
+            }
+        }, index * 100); // Her görsel için 100ms gecikme
+    });
+}
+
+// Görsel placeholder göster
+function showImagePlaceholder(img) {
+    const bookCover = img.closest('.book-cover');
+    if (!bookCover) return;
+    
+    // Placeholder zaten varsa çık
+    if (bookCover.querySelector('.image-placeholder')) return;
+    
+    const placeholder = document.createElement('div');
+    placeholder.className = 'image-placeholder';
+    placeholder.innerHTML = `
+        <div class="placeholder-content">
+            <i class="ri-image-line"></i>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+    
+    bookCover.appendChild(placeholder);
+    img.style.opacity = '0';
+}
+
+// Görsel placeholder gizle
+function hideImagePlaceholder(img) {
+    const bookCover = img.closest('.book-cover');
+    if (!bookCover) return;
+    
+    const placeholder = bookCover.querySelector('.image-placeholder');
+    if (placeholder) {
+        placeholder.style.opacity = '0';
+        setTimeout(() => {
+            if (placeholder.parentElement) {
+                placeholder.parentElement.removeChild(placeholder);
+            }
+        }, 300);
+    }
+    
+    img.style.opacity = '1';
+}
+
+// Görsel optimizasyonlarını uygula
+function applyImageOptimizations(img) {
+    // Görsel boyutlarını kontrol et ve optimize et
+    if (img.naturalWidth && img.naturalHeight) {
+        const aspectRatio = img.naturalWidth / img.naturalHeight;
+        const idealRatio = 3 / 4; // Kitap kapağı oranı
+        
+        // Oran uygun değilse object-position ayarla
+        if (Math.abs(aspectRatio - idealRatio) > 0.1) {
+            img.style.objectPosition = 'center top';
+        }
+        
+        // Çok büyük görseller için uyarı (geliştirme aşamasında)
+        if (img.naturalWidth > 1000 || img.naturalHeight > 1500) {
+            console.warn(`Büyük görsel tespit edildi: ${img.src} (${img.naturalWidth}x${img.naturalHeight})`);
+        }
+    }
+    
+    // Görsel kalitesi filtreleri uygula
+    img.style.filter = 'contrast(1.05) saturate(1.05)';
+    
+    // Hover efekti için hazırla
+    img.addEventListener('mouseenter', function() {
+        this.style.filter = 'contrast(1.1) saturate(1.1)';
+    });
+    
+    img.addEventListener('mouseleave', function() {
+        this.style.filter = 'contrast(1.05) saturate(1.05)';
     });
 }

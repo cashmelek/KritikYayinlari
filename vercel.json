@@ -1,5 +1,18 @@
 {
   "rewrites": [
+    { "source": "/login", "destination": "/admin/login.html" },
+    { "source": "/login.html", "destination": "/admin/login.html" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/", "destination": "/admin/index.html" },
+    { "source": "/admin/login", "destination": "/admin/login.html" },
+    { "source": "/admin/login/", "destination": "/admin/login.html" },
+    { "source": "/admin/kitaplar", "destination": "/admin/kitaplar.html" },
+    { "source": "/admin/yazarlar", "destination": "/admin/yazarlar.html" },
+    { "source": "/admin/bannerlar", "destination": "/admin/bannerlar.html" },
+    { "source": "/admin/iletisim", "destination": "/admin/iletisim.html" },
+    { "source": "/admin/hakkimizda", "destination": "/admin/hakkimizda.html" },
+    { "source": "/admin/kullanicilar", "destination": "/admin/kullanicilar.html" },
+    { "source": "/admin/reset-password", "destination": "/admin/reset-password.html" },
     { "source": "/", "destination": "/index.html" }
   ]
 } 

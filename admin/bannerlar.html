@@ -4,9 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bannerlar - Kritik Yayınları Yönetim Paneli</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com/3.4.16"></script>
-    <script>tailwind.config={theme:{extend:{colors:{primary:'#d4af37',secondary:'#1a1a1a'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#d4af37',
+                        secondary: '#1a1a1a'
+                    },
+                    borderRadius: {
+                        'none': '0px',
+                        'sm': '4px',
+                        DEFAULT: '8px',
+                        'md': '12px',
+                        'lg': '16px',
+                        'xl': '20px',
+                        '2xl': '24px',
+                        '3xl': '32px',
+                        'full': '9999px',
+                        'button': '8px'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Remix Icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <!-- Admin CSS -->
     <link rel="stylesheet" href="css/admin.css">
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -14,8 +40,10 @@
     <script src="../js/supabase-config.js"></script>
     <!-- Görsel Ölçeklendirme Modülü -->
     <script src="js/image-scaler.js"></script>
-    <!-- Supabase Admin JS -->
+    <!-- Supabase Admin API -->
     <script src="js/supabase-admin-api.js"></script>
+    <!-- Supabase Admin Realtime -->
+    <script src="js/supabase-admin-realtime.js"></script>
     <!-- Bannerlar JS -->
     <script src="js/bannerlar.js"></script>
     <!-- Admin auth check -->
@@ -44,70 +72,97 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        .banner-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .banner-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .banner-card:hover .banner-actions {
+        .banner-card:hover .quick-view {
             opacity: 1;
         }
-        .banner-actions {
-            opacity: 0;
-            transition: opacity 0.2s;
+        .banner-card:hover .favorite-button {
+            opacity: 1;
         }
-        .status-badge {
-            transition: all 0.2s;
+        .category-filter::-webkit-scrollbar {
+            height: 4px;
+        }
+        .category-filter::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .category-filter::-webkit-scrollbar-thumb {
+            background: #d4af37;
+            border-radius: 10px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #d4af37;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #d4af37;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 5px;
+            background: #e5e7eb;
+            outline: none;
+        }
+        .custom-checkbox {
+            display: flex;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+        }
+        .custom-checkbox input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        .checkmark {
+            height: 20px;
+            width: 20px;
+            background-color: #fff;
+            border: 2px solid #e5e7eb;
+            border-radius: 4px;
+            position: relative;
+        }
+        .custom-checkbox:hover input ~ .checkmark {
+            border-color: #d4af37;
+        }
+        .custom-checkbox input:checked ~ .checkmark {
+            background-color: #d4af37;
+            border-color: #d4af37;
+        }
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .custom-checkbox input:checked ~ .checkmark:after {
+            display: block;
         }
         .sidebar-active {
             background-color: #d4af37 !important;
             color: #1a1a1a !important;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 50;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5);
-        }
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background-color: #fefefe;
-            padding: 2rem;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .image-preview {
-            background: #f3f4f6;
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .image-preview img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        .image-preview.has-image {
-            border-style: solid;
         }
     </style>
 </head>
@@ -216,15 +271,14 @@
                     <!-- Header -->
                     <div class="flex justify-between items-center mb-8">
                         <div>
-                            <h1 class="text-3xl font-bold text-secondary">Banner Yönetimi</h1>
+                            <h1 class="text-3xl font-bold text-secondary flex items-center">
+                                <i class="ri-image-line mr-3 text-primary"></i>
+                                Banner Yönetimi
+                            </h1>
                             <p class="text-gray-600 mt-1">Tüm banner görsellerini yönetin</p>
                         </div>
                         <div class="flex space-x-3">
-                            <a href="../force-refresh.html" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-3 rounded-lg flex items-center transition-colors">
-                                <i class="ri-refresh-line mr-2"></i>
-                                Önbelleği Temizle
-                            </a>
-                            <button id="addBannerBtn" class="bg-primary hover:bg-yellow-600 text-white px-6 py-3 rounded-lg flex items-center transition-colors">
+                            <button id="addBannerButton" class="bg-primary hover:bg-yellow-600 text-white px-6 py-3 rounded-lg flex items-center transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                                 <i class="ri-add-line mr-2"></i>
                                 Yeni Banner Ekle
                             </button>
@@ -233,11 +287,11 @@
 
                     <!-- İstatistik Kartları -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white rounded-lg p-4 border-l-4 border-primary">
+                        <div class="bg-white rounded-xl p-6 border-l-4 border-primary shadow-sm hover:shadow-md transition-shadow">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4 class="text-sm font-medium text-gray-600">Toplam Banner</h4>
-                                    <p class="text-2xl font-bold text-secondary mt-1">0</p>
+                                    <p class="text-2xl font-bold text-secondary mt-1" id="totalBanners">0</p>
                                 </div>
                                 <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                                     <i class="ri-image-2-line text-primary text-xl"></i>
@@ -245,11 +299,11 @@
                             </div>
                         </div>
                         
-                        <div class="bg-white rounded-lg p-4 border-l-4 border-green-500">
+                        <div class="bg-white rounded-xl p-6 border-l-4 border-green-500 shadow-sm hover:shadow-md transition-shadow">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4 class="text-sm font-medium text-gray-600">Aktif Banner</h4>
-                                    <p class="text-2xl font-bold text-secondary mt-1">0</p>
+                                    <p class="text-2xl font-bold text-secondary mt-1" id="activeBanners">0</p>
                                 </div>
                                 <div class="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
                                     <i class="ri-checkbox-circle-line text-green-500 text-xl"></i>
@@ -257,11 +311,11 @@
                             </div>
                         </div>
                         
-                        <div class="bg-white rounded-lg p-4 border-l-4 border-red-500">
+                        <div class="bg-white rounded-xl p-6 border-l-4 border-red-500 shadow-sm hover:shadow-md transition-shadow">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4 class="text-sm font-medium text-gray-600">Pasif Banner</h4>
-                                    <p class="text-2xl font-bold text-secondary mt-1">0</p>
+                                    <p class="text-2xl font-bold text-secondary mt-1" id="inactiveBanners">0</p>
                                 </div>
                                 <div class="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center">
                                     <i class="ri-close-circle-line text-red-500 text-xl"></i>
@@ -269,11 +323,11 @@
                             </div>
                         </div>
                         
-                        <div class="bg-white rounded-lg p-4 border-l-4 border-blue-500">
+                        <div class="bg-white rounded-xl p-6 border-l-4 border-blue-500 shadow-sm hover:shadow-md transition-shadow">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <h4 class="text-sm font-medium text-gray-600">Tıklanma</h4>
-                                    <p class="text-2xl font-bold text-secondary mt-1">0</p>
+                                    <h4 class="text-sm font-medium text-gray-600">Toplam Tıklama</h4>
+                                    <p class="text-2xl font-bold text-secondary mt-1" id="totalClicks">0</p>
                                 </div>
                                 <div class="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
                                     <i class="ri-cursor-line text-blue-500 text-xl"></i>
@@ -283,52 +337,51 @@
                     </div>
 
                     <!-- Filtreler ve Sıralama -->
-                    <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
                         <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
                             <!-- Sol Taraf: Arama ve Filtreler -->
                             <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                                 <div class="relative">
-                                    <input type="text" placeholder="Banner ara..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary w-full sm:w-64">
+                                    <input type="text" id="search" placeholder="Banner ara..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary w-full sm:w-64">
                                     <i class="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                                 </div>
                                 
-                                <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
-                                    <option value="">Tüm Konumlar</option>
-                                    <option value="homepage">Ana Sayfa</option>
-                                    <option value="books">Kitaplar Sayfası</option>
-                                    <option value="authors">Yazarlar Sayfası</option>
-                                    <option value="all">Tüm Sayfalar</option>
-                                </select>
-                                
-                                <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                                <select id="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
                                     <option value="">Tüm Durumlar</option>
                                     <option value="active">Aktif</option>
                                     <option value="inactive">Pasif</option>
                                 </select>
+                                
+                                <select id="position" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                                    <option value="">Tüm Konumlar</option>
+                                    <option value="homepage">Ana Sayfa</option>
+                                    <option value="books">Kitaplar Sayfası</option>
+                                    <option value="authors">Yazarlar Sayfası</option>
+                                </select>
                             </div>
                             
-                            <!-- Sağ Taraf: Sıralama ve Ekle Butonu -->
+                            <!-- Sağ Taraf: Sıralama ve Temizle Butonu -->
                             <div class="flex items-center gap-3">
                                 <div class="relative">
-                                    <select class="px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary appearance-none bg-white">
+                                    <select id="sortBy" class="px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary appearance-none bg-white">
                                         <option value="newest">En Yeni</option>
                                         <option value="oldest">En Eski</option>
-                                        <option value="mostClicked">En Çok Tıklanan</option>
-                                        <option value="leastClicked">En Az Tıklanan</option>
+                                        <option value="order">Sıra Numarası</option>
+                                        <option value="clicks">En Çok Tıklanan</option>
                                     </select>
                                     <i class="ri-arrow-down-s-line absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                                 </div>
+                                <button id="clearFilters" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                                    <i class="ri-refresh-line mr-1"></i>
+                                    Temizle
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Banner Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="bannerContainer">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="bannersContainer">
                         <!-- Bannerlar buraya dinamik olarak yüklenecek -->
-                        <div class="col-span-full flex items-center justify-center py-12">
-                            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
-                            <span class="ml-3 text-gray-600">Bannerlar yükleniyor...</span>
-                        </div>
                     </div>
                 </div>
             </main>
@@ -336,97 +389,81 @@
     </div>
 
     <!-- Banner Ekle/Düzenle Modal -->
-    <div id="bannerModal" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-4">
-                <h2 id="modalTitle" class="text-xl font-bold text-secondary">Yeni Banner Ekle</h2>
-                <button type="button" class="text-gray-500 hover:text-gray-700 focus:outline-none" onclick="closeModal()">
-                    <i class="ri-close-line text-xl"></i>
-                </button>
+    <div id="addBannerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-xl">
+                <div class="flex justify-between items-center">
+                    <h2 id="modalTitle" class="text-xl font-bold text-secondary flex items-center">
+                        <i class="ri-image-add-line mr-2 text-primary"></i>
+                        <span>Yeni Banner Ekle</span>
+                    </h2>
+                    <button type="button" class="text-gray-500 hover:text-gray-700 focus:outline-none" data-close-modal>
+                        <i class="ri-close-line text-xl"></i>
+                    </button>
+                </div>
             </div>
             
-            <form id="addBannerForm" class="space-y-4">
-                <!-- Görsel Seçme -->
+            <form id="addBannerForm" class="p-6 space-y-6">
+                <input type="hidden" id="bannerId" value="">
+                
+                <!-- Banner Görseli -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Banner Görseli</label>
-                    <div id="imagePreview" class="image-preview flex flex-col items-center justify-center cursor-pointer">
-                        <i class="ri-image-add-line text-3xl text-gray-400"></i>
-                        <p class="text-sm text-gray-500 mt-2">Görsel yüklemek için tıklayın veya sürükleyin</p>
-                        <p class="text-xs text-gray-400 mt-1">Önerilen boyut: 1200x400px (3:1)</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Banner Görseli *</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer" id="imageUploadArea">
+                        <img id="bannerImagePreview" src="../images/placeholder.png" alt="Banner Önizleme" class="mx-auto h-32 w-auto object-contain mb-4 rounded-lg">
+                        <div>
+                            <i class="ri-upload-cloud-2-line text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600">Görsel yüklemek için tıklayın veya sürükleyin</p>
+                            <p class="text-xs text-gray-400 mt-1">Önerilen boyut: 1200x400px (JPG, PNG, WebP)</p>
+                        </div>
                     </div>
                     <input type="file" id="bannerImage" accept="image/*" class="hidden">
                 </div>
                 
-                <!-- Başlık -->
+                <!-- Banner Başlığı -->
                 <div>
-                    <label for="bannerTitle" class="block text-sm font-medium text-gray-700 mb-1">Banner Başlığı *</label>
-                    <input type="text" id="bannerTitle" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required placeholder="Banner başlığı">
+                    <label for="bannerTitle" class="block text-sm font-medium text-gray-700 mb-2">Banner Başlığı *</label>
+                    <input type="text" id="bannerTitle" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" required placeholder="Banner başlığını girin">
                 </div>
                 
-                <!-- Alt Başlık -->
+                <!-- Banner Açıklaması -->
                 <div>
-                    <label for="bannerSubtitle" class="block text-sm font-medium text-gray-700 mb-1">Alt Başlık</label>
-                    <input type="text" id="bannerSubtitle" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Banner alt başlığı">
+                    <label for="bannerDescription" class="block text-sm font-medium text-gray-700 mb-2">Banner Açıklaması</label>
+                    <textarea id="bannerDescription" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" rows="3" placeholder="Banner açıklamasını girin"></textarea>
                 </div>
                 
-                <!-- Açıklama -->
+                <!-- Banner Linki -->
                 <div>
-                    <label for="bannerDescription" class="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
-                    <textarea id="bannerDescription" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" rows="3" placeholder="Banner açıklaması"></textarea>
-                </div>
-                
-                <!-- Hedef Türü -->
-                <div>
-                    <label for="bannerTargetType" class="block text-sm font-medium text-gray-700 mb-1">Hedef Türü</label>
-                    <select id="bannerTargetType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
-                        <option value="">Standart (Link Kullan)</option>
-                        <option value="yazar">Yazar Sayfası</option>
-                        <option value="yazar_kitaplari">Yazarın Kitapları</option>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">
-                        <span class="text-primary font-medium">Yazar Sayfası:</span> Yazarın biyografisi ve kitapları gösterilir.
-                        <br><span class="text-primary font-medium">Yazarın Kitapları:</span> Sadece yazarın kitapları listelenir.
-                    </p>
-                </div>
-                
-                <!-- Hedef ID (Yazar ID) -->
-                <div id="targetIdContainer" class="hidden">
-                    <label for="bannerTargetId" class="block text-sm font-medium text-gray-700 mb-1">Yazar ID</label>
-                    <div class="flex space-x-2">
-                        <input type="text" id="bannerTargetId" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Yazar ID (ör: 1)">
-                        <button type="button" id="selectYazarBtn" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-                            <i class="ri-search-line"></i>
-                        </button>
-                    </div>
-                    <p class="text-xs text-gray-500 mt-1">Banner tıklandığında bu yazarın kitaplarına yönlendirilecek</p>
-                </div>
-                
-                <!-- Yönlendirme Linki -->
-                <div id="linkContainer">
-                    <label for="bannerLink" class="block text-sm font-medium text-gray-700 mb-1">Yönlendirme Linki</label>
-                    <input type="text" id="bannerLink" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Örn: kitaplar.html veya https://...">
+                    <label for="bannerLink" class="block text-sm font-medium text-gray-700 mb-2">Banner Linki</label>
+                    <input type="text" id="bannerLink" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Örn: kitaplar.html veya https://...">
                 </div>
                 
                 <!-- Sıra Numarası -->
                 <div>
-                    <label for="bannerOrder" class="block text-sm font-medium text-gray-700 mb-1">Sıra Numarası</label>
-                    <input type="number" id="bannerOrder" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="Sıralama (0-99)" value="0">
+                    <label for="bannerOrder" class="block text-sm font-medium text-gray-700 mb-2">Sıra Numarası</label>
+                    <input type="number" id="bannerOrder" min="0" max="99" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="0-99 arası" value="0">
                 </div>
                 
                 <!-- Aktif/Pasif -->
                 <div class="flex items-center">
-                    <input type="checkbox" id="bannerActive" class="w-4 h-4 text-primary focus:ring-primary/30 border-gray-300 rounded">
-                    <label for="bannerActive" class="ml-2 block text-sm font-medium text-gray-700">Banner aktif olarak gösterilsin</label>
+                    <input type="checkbox" id="isActive" class="w-4 h-4 text-primary focus:ring-primary/30 border-gray-300 rounded">
+                    <label for="isActive" class="ml-2 block text-sm font-medium text-gray-700">Banner aktif olarak gösterilsin</label>
                 </div>
                 
-                <!-- Gönder Butonu -->
-                <div class="flex justify-end mt-6">
-                    <button type="button" class="mr-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors" onclick="closeModal()">İptal</button>
-                    <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center">Ekle</button>
+                <!-- Form Butonları -->
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors" data-close-modal>İptal</button>
+                    <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center">
+                        <i class="ri-save-line mr-2"></i>
+                        Kaydet
+                    </button>
                 </div>
             </form>
         </div>
     </div>
+
+    <!-- Modal Overlay -->
+    <div id="modalOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
 
     <!-- JavaScript -->
     <script>
@@ -453,25 +490,8 @@
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    // Çıkış işlemleri burada yapılacak
-                    window.location.href = "../anasayfa.html";
-                });
-            }
-            
-            // Modal dışına tıklandığında kapanma
-            const modal = document.getElementById('bannerModal');
-            if (modal) {
-                modal.addEventListener('click', function(event) {
-                    if (event.target === modal) {
-                        closeModal();
-                    }
-                });
-                
-                // ESC tuşu ile kapatma
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape' && modal.classList.contains('active')) {
-                        closeModal();
-                    }
+                    sessionStorage.removeItem('kritik_admin_logged_in');
+                    window.location.href = 'login.html';
                 });
             }
         });

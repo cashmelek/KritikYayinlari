@@ -1534,17 +1534,87 @@ img {
     position: relative;
     height: 300px;
     overflow: hidden;
+    aspect-ratio: 3/4;
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
 }
 
 .book-cover img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     transition: var(--transition);
+    
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    filter: contrast(1.05) saturate(1.05);
+    
+    opacity: 0;
+    animation: fadeInImage 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeInImage {
+    from {
+        opacity: 0;
+        transform: scale(1.02);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .book-card:hover .book-cover img {
     transform: scale(1.05);
+    filter: contrast(1.1) saturate(1.1);
+}
+
+.book-cover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+    background-size: 400% 400%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    z-index: 1;
+}
+
+.book-cover img:not([src=""]) + .book-cover::before,
+.book-cover img[src]:not([src=""]) ~ .book-cover::before {
+    display: none;
+}
+
+@keyframes shimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@media (max-width: 1200px) {
+    .book-cover {
+        height: 280px;
+    }
+}
+
+@media (max-width: 992px) {
+    .book-cover {
+        height: 260px;
+    }
+}
+
+@media (max-width: 768px) {
+    .book-cover {
+        height: 240px;
+    }
+}
+
+@media (max-width: 576px) {
+    .book-cover {
+        height: 220px;
+    }
 }
 
 .book-badges {
@@ -1944,4 +2014,95 @@ img {
 
 .fade-in {
     animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Görsel Placeholder Stilleri */
+.image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: opacity 0.3s ease;
+}
+
+.placeholder-content {
+    text-align: center;
+    color: #6c757d;
+}
+
+.placeholder-content i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+.loading-dots {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+}
+
+.loading-dots span {
+    width: 6px;
+    height: 6px;
+    background-color: #6c757d;
+    border-radius: 50%;
+    animation: loadingDots 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+.loading-dots span:nth-child(3) { animation-delay: 0s; }
+
+@keyframes loadingDots {
+    0%, 80%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Görsel Hata Durumu */
+.book-cover img[src*="placeholder"] {
+    filter: grayscale(0.3) opacity(0.8);
+}
+
+/* Responsive Görsel Optimizasyonları */
+@media (max-width: 480px) {
+    .placeholder-content i {
+        font-size: 1.5rem;
+    }
+    
+    .loading-dots span {
+        width: 4px;
+        height: 4px;
+    }
+}
+
+/* Görsel Yükleme Performans Optimizasyonları */
+.book-cover img {
+    /* GPU acceleration için */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    
+    /* Smooth scrolling için */
+    will-change: transform, filter;
+}
+
+/* Retina ekranlar için optimizasyon */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .book-cover img {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
 }

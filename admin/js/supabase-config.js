@@ -1,356 +1,211 @@
-// SQLite veritabanı simülasyonu
-console.log('Yerel veritabanı bağlantısı başlatılıyor...');
+// Supabase konfigürasyonu
+const SUPABASE_URL = 'https://lddzbhbzaxigfejysary.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkZHpiaGJ6YXhpZ2ZlanlzYXJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5OTExNzksImV4cCI6MjA2NDU2NzE3OX0.Mx0ve7D0zscuZsEmxYh8EALOtHVkYZeydgwOqtiGG34';
 
-// Yerel depolama fonksiyonları
-function getLocalData(tableName) {
-    const data = localStorage.getItem(`kritik_db_${tableName}`);
-    return data ? JSON.parse(data) : null;
-}
+// Supabase client'ı oluştur
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function saveLocalData(tableName, data) {
-    localStorage.setItem(`kritik_db_${tableName}`, JSON.stringify(data));
-}
+console.log('Supabase bağlantısı başlatılıyor...');
 
-// SQLite benzeri bir yapı oluşturuyoruz
-class LocalDatabase {
-    constructor() {
-        // Veritabanı tabloları
-        this.tables = {
-            books: getLocalData('books') || [],
-            authors: getLocalData('authors') || [],
-            pages: getLocalData('pages') || [],
-            contacts: getLocalData('contacts') || []
-        };
-        
-        // Başlangıç verilerini yükle
-        this.initData();
-        console.log('Yerel veritabanı başlatıldı');
-    }
-    
-    // Veritabanını başlatma
-    initData() {
-        // Eğer pages tablosu boşsa, örnek veri ekle
-        if (this.tables.pages.length === 0) {
-            this.tables.pages.push({
-                id: 1,
-                slug: 'hakkimizda',
-                title: 'Hakkımızda',
-                content: 'Kritik Yayınları, 2010 yılında İstanbul\'da kurulmuş, Türk ve dünya edebiyatının seçkin eserlerini okuyucularla buluşturmayı amaçlayan bir yayınevidir. Kurulduğumuz günden bu yana, edebiyatın her alanından nitelikli eserleri titizlikle seçerek yayın programımıza dahil ediyoruz.\n\nYayınevimiz, çağdaş Türk edebiyatından klasik eserlere, dünya edebiyatının ölümsüz yapıtlarından çocuk ve gençlik kitaplarına kadar geniş bir yelpazede kitaplar yayınlamaktadır. Her yaştan ve her kesimden okuyucuya hitap eden bir katalog oluşturmak için çalışıyoruz.\n\nKritik Yayınları olarak, sadece kitap basmakla kalmıyor, aynı zamanda edebiyatın ve okumanın yaygınlaşması için çeşitli etkinlikler, söyleşiler ve imza günleri düzenliyoruz. Yazarlarımızla okuyucularımızı buluşturarak, edebiyat dünyasına katkı sağlamayı hedefliyoruz.',
-                image_url: '',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
-            
-            saveLocalData('pages', this.tables.pages);
-        }
-        
-        // Eğer contacts tablosu boşsa, örnek veri ekle
-        if (this.tables.contacts.length === 0) {
-            this.tables.contacts.push({
-                id: 1,
-                address: 'İstanbul, Türkiye',
-                phone: '+90 212 123 45 67',
-                email: 'info@kritikyayinlari.com',
-                work_hours: 'Pazartesi-Cuma: 09:00-18:00',
-                social_media: {
-                    facebook: 'https://facebook.com/kritikyayinlari',
-                    twitter: 'https://twitter.com/kritikyayinlari',
-                    instagram: 'https://instagram.com/kritikyayinlari',
-                    youtube: ''
-                },
-                map_embed: '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12037.25802419999!2d28.978694!3d41.036129!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cab7650656bd63%3A0x8ca058b28c20b6c3!2zVGFrc2ltIFNxdWFyZSwgR8O8bcO8xZ9zdXl1LCDEsHN0YW5idWwsIFTDvHJraXll!5e0!3m2!1sen!2str!4v1631234567890!5m2!1sen!2str" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
-            
-            saveLocalData('contacts', this.tables.contacts);
-        }
-        
-        // Örnek kitap ve yazar verileri
-        if (this.tables.books.length === 0) {
-            this.tables.books.push({
-                id: 1,
-                title: 'Beyaz Zambaklar Ülkesinde',
-                author_id: 1,
-                description: 'Finlandiya\'nın ulusal kalkınma hikayesi',
-                price: 120,
-                image_url: '',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
-            
-            this.tables.books.push({
-                id: 2,
-                title: 'Saatleri Ayarlama Enstitüsü',
-                author_id: 2,
-                description: 'Türk edebiyatının en önemli romanlarından biri',
-                price: 150,
-                image_url: '',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
-            
-            saveLocalData('books', this.tables.books);
-        }
-        
-        if (this.tables.authors.length === 0) {
-            this.tables.authors.push({
-                id: 1,
-                name: 'Grigory Petrov',
-                biography: 'Rus yazar ve din adamı',
-                image_url: '',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
-            
-            this.tables.authors.push({
-                id: 2,
-                name: 'Ahmet Hamdi Tanpınar',
-                biography: 'Türk edebiyatının önemli yazarlarından',
-                image_url: '',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            });
-            
-            saveLocalData('authors', this.tables.authors);
-        }
-    }
-    
-    // Supabase benzeri bir API
-    from(tableName) {
-        return {
-            // Veri seçimi
-            select: (fields) => {
-                return {
-                    // Eşitlik kontrolü
-                    eq: (field, value) => {
-                        return {
-                            // Tek kayıt döndürme
-                            single: () => {
-                                try {
-                                    const table = this.tables[tableName] || [];
-                                    const result = table.find(item => item[field] === value);
-                                    
-                                    return {
-                                        data: result || null,
-                                        error: null
-                                    };
-                                } catch (error) {
-                                    console.error(`${tableName} tablosunda veri alırken hata:`, error);
-                                    return {
-                                        data: null,
-                                        error: { message: error.message }
-                                    };
-                                }
-                            },
-                            // Tüm eşleşen kayıtları döndürme
-                            execute: () => {
-                                try {
-                                    const table = this.tables[tableName] || [];
-                                    const results = table.filter(item => item[field] === value);
-                                    
-                                    return {
-                                        data: results,
-                                        error: null
-                                    };
-                                } catch (error) {
-                                    console.error(`${tableName} tablosunda veri alırken hata:`, error);
-                                    return {
-                                        data: null,
-                                        error: { message: error.message }
-                                    };
-                                }
-                            }
-                        };
-                    },
-                    // Sıralama
-                    order: (field, options = {}) => {
-                        return {
-                            // Kayıt limiti
-                            limit: (limit) => {
-                                try {
-                                    const table = this.tables[tableName] || [];
-                                    const sorted = [...table].sort((a, b) => {
-                                        if (options.ascending) {
-                                            return a[field] > b[field] ? 1 : -1;
-                                        } else {
-                                            return a[field] < b[field] ? 1 : -1;
-                                        }
-                                    });
-                                    
-                                    const limited = sorted.slice(0, limit);
-                                    
-                                    return {
-                                        data: limited,
-                                        error: null
-                                    };
-                                } catch (error) {
-                                    console.error(`${tableName} tablosunda veri alırken hata:`, error);
-                                    return {
-                                        data: null,
-                                        error: { message: error.message }
-                                    };
-                                }
-                            },
-                            // Tüm sıralanmış kayıtları döndürme
-                            execute: () => {
-                                try {
-                                    const table = this.tables[tableName] || [];
-                                    const sorted = [...table].sort((a, b) => {
-                                        if (options.ascending) {
-                                            return a[field] > b[field] ? 1 : -1;
-                                        } else {
-                                            return a[field] < b[field] ? 1 : -1;
-                                        }
-                                    });
-                                    
-                                    return {
-                                        data: sorted,
-                                        error: null
-                                    };
-                                } catch (error) {
-                                    console.error(`${tableName} tablosunda veri alırken hata:`, error);
-                                    return {
-                                        data: null,
-                                        error: { message: error.message }
-                                    };
-                                }
-                            }
-                        };
-                    },
-                    // Limit
-                    limit: (limit) => {
-                        try {
-                            const table = this.tables[tableName] || [];
-                            const limited = table.slice(0, limit);
-                            
-                            return {
-                                data: limited,
-                                error: null
-                            };
-                        } catch (error) {
-                            console.error(`${tableName} tablosunda veri alırken hata:`, error);
-                            return {
-                                data: null,
-                                error: { message: error.message }
-                            };
-                        }
-                    },
-                    // Tüm kayıtları döndürme
-                    execute: () => {
-                        try {
-                            const table = this.tables[tableName] || [];
-                            
-                            return {
-                                data: table,
-                                error: null
-                            };
-                        } catch (error) {
-                            console.error(`${tableName} tablosunda veri alırken hata:`, error);
-                            return {
-                                data: null,
-                                error: { message: error.message }
-                            };
-                        }
-                    }
-                };
-            },
-            // Veri ekleme/güncelleme
-            upsert: (data, options = {}) => {
-                try {
-                    const table = this.tables[tableName] || [];
-                    let updatedTable = [...table];
-                    
-                    // Veriyi güncelle veya ekle
-                    if (data.id) {
-                        // ID varsa güncelleme yap
-                        const index = updatedTable.findIndex(item => item.id === data.id);
-                        
-                        if (index !== -1) {
-                            updatedTable[index] = { ...updatedTable[index], ...data, updated_at: new Date().toISOString() };
-                        } else {
-                            // ID var ama tabloda yok, yeni kayıt ekle
-                            updatedTable.push({ ...data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-                        }
-                    } else if (options.onConflict && data[options.onConflict]) {
-                        // Çakışma durumunda güncelleme yap
-                        const conflictField = options.onConflict;
-                        const index = updatedTable.findIndex(item => item[conflictField] === data[conflictField]);
-                        
-                        if (index !== -1) {
-                            updatedTable[index] = { ...updatedTable[index], ...data, updated_at: new Date().toISOString() };
-                        } else {
-                            // Yeni kayıt ekle
-                            const newId = updatedTable.length > 0 ? Math.max(...updatedTable.map(item => item.id || 0)) + 1 : 1;
-                            updatedTable.push({ id: newId, ...data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-                        }
-                    } else {
-                        // Yeni kayıt ekle
-                        const newId = updatedTable.length > 0 ? Math.max(...updatedTable.map(item => item.id || 0)) + 1 : 1;
-                        updatedTable.push({ id: newId, ...data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-                    }
-                    
-                    // Veritabanını güncelle
-                    this.tables[tableName] = updatedTable;
-                    saveLocalData(tableName, updatedTable);
-                    
-                    return {
-                        data: data,
-                        error: null
-                    };
-                } catch (error) {
-                    console.error(`${tableName} tablosuna veri eklerken/güncellerken hata:`, error);
-                    return {
-                        data: null,
-                        error: { message: error.message }
-                    };
-                }
-            }
-        };
-    }
-}
-
-// Supabase istemcisi yerine yerel veritabanı
-const supabaseClient = new LocalDatabase();
-
-// Global değişken olarak dışa aktar
-window.supabaseClient = supabaseClient;
-
-// Veritabanı bağlantısını kontrol et
-function checkDatabaseConnection() {
-    console.log('Yerel veritabanı bağlantısı kontrol ediliyor...');
-    
+// Veritabanı bağlantısını test et
+async function checkDatabaseConnection() {
     try {
-        // Bağlantı başarılı
-        if (document.getElementById('connection-status')) {
-            document.getElementById('connection-status').innerHTML = `
-                <div class="alert alert-success">
-                    <i class="ri-check-line mr-2"></i>
-                    Yerel veritabanı bağlantısı başarılı
-                </div>
-            `;
+        console.log('Supabase bağlantısı test ediliyor...');
+        
+        // Basit bir sorgu ile bağlantıyı test et
+        const { data, error } = await supabaseClient
+            .from('books')
+            .select('count')
+            .limit(1);
+            
+        if (error) {
+            console.error('Supabase bağlantı hatası:', error);
+            return false;
         }
         
+        console.log('Supabase bağlantısı başarılı!');
         return true;
     } catch (error) {
-        console.error('Yerel veritabanı kontrolü sırasında hata:', error);
-        
-        // Admin panel arayüzünde hata göster
-        if (document.getElementById('connection-status')) {
-            document.getElementById('connection-status').innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="ri-error-warning-line mr-2"></i>
-                    Yerel veritabanı kontrolü sırasında hata oluştu: ${error.message}
-                </div>
-            `;
-            }
-        
+        console.error('Supabase bağlantı test hatası:', error);
         return false;
     }
 }
 
-// Sayfa yüklendiğinde veritabanı bağlantısını kontrol et
-document.addEventListener('DOMContentLoaded', function() {
-    // Veritabanı bağlantısını kontrol et
-    checkDatabaseConnection();
+// Admin oturum yönetimi
+class AdminAuth {
+    constructor() {
+        this.currentUser = null;
+        this.sessionToken = localStorage.getItem('admin_session_token');
+        this.checkSession();
+    }
+    
+    async checkSession() {
+        if (!this.sessionToken) {
+            return false;
+        }
+        
+        try {
+            const { data, error } = await supabaseClient
+                .from('admin_sessions')
+                .select('*, admin_users(*)')
+                .eq('token', this.sessionToken)
+                .eq('is_active', true)
+                .single();
+                
+            if (error || !data) {
+                this.logout();
+                return false;
+            }
+            
+            // Oturum süresini kontrol et
+            const expiresAt = new Date(data.expires_at);
+            if (expiresAt < new Date()) {
+                this.logout();
+                return false;
+            }
+            
+            this.currentUser = data.admin_users;
+            return true;
+        } catch (error) {
+            console.error('Oturum kontrol hatası:', error);
+            this.logout();
+            return false;
+        }
+    }
+    
+    async login(username, password) {
+        try {
+            // Kullanıcıyı doğrula
+            const { data: user, error: userError } = await supabaseClient
+                .from('admin_users')
+                .select('*')
+                .eq('username', username)
+                .eq('is_active', true)
+                .single();
+                
+            if (userError || !user) {
+                throw new Error('Kullanıcı bulunamadı');
+            }
+            
+            // Şifre kontrolü (gerçek uygulamada hash'lenmiş şifre kullanılmalı)
+            if (user.password !== password) {
+                throw new Error('Şifre hatalı');
+            }
+            
+            // Yeni oturum oluştur
+            const sessionToken = this.generateSessionToken();
+            const expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + 24); // 24 saat
+            
+            const { data: session, error: sessionError } = await supabaseClient
+                .from('admin_sessions')
+                .insert({
+                    user_id: user.id,
+                    token: sessionToken,
+                    expires_at: expiresAt.toISOString(),
+                    is_active: true
+                })
+                .select()
+                .single();
+                
+            if (sessionError) {
+                throw new Error('Oturum oluşturulamadı');
+            }
+            
+            // Aktivite kaydı
+            await this.logActivity(user.id, 'login', 'Başarılı giriş');
+            
+            this.sessionToken = sessionToken;
+            this.currentUser = user;
+            localStorage.setItem('admin_session_token', sessionToken);
+            
+            return { success: true, user };
+        } catch (error) {
+            console.error('Giriş hatası:', error);
+            return { success: false, error: error.message };
+        }
+    }
+    
+    async logout() {
+        if (this.sessionToken && this.currentUser) {
+            try {
+                // Oturumu pasif yap
+                await supabaseClient
+                    .from('admin_sessions')
+                    .update({ is_active: false })
+                    .eq('token', this.sessionToken);
+                    
+                // Aktivite kaydı
+                await this.logActivity(this.currentUser.id, 'logout', 'Çıkış yapıldı');
+                                } catch (error) {
+                console.error('Çıkış hatası:', error);
+            }
+        }
+        
+        this.sessionToken = null;
+        this.currentUser = null;
+        localStorage.removeItem('admin_session_token');
+        
+        // Login sayfasına yönlendir
+        if (window.location.pathname !== '/admin/login.html') {
+            window.location.href = '/admin/login.html';
+        }
+    }
+    
+    generateSessionToken() {
+        return 'admin_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    }
+    
+    async logActivity(userId, action, description) {
+        try {
+            await supabaseClient
+                .from('admin_activity_logs')
+                .insert({
+                    user_id: userId,
+                    action,
+                    description,
+                    ip_address: '127.0.0.1', // Gerçek uygulamada IP adresi alınabilir
+                    user_agent: navigator.userAgent
+                });
+                        } catch (error) {
+            console.error('Aktivite kaydı hatası:', error);
+        }
+    }
+    
+    isLoggedIn() {
+        return this.currentUser !== null;
+    }
+    
+    getUser() {
+        return this.currentUser;
+    }
+}
+
+// Global admin auth instance
+const adminAuth = new AdminAuth();
+
+// Sayfa yüklendiğinde bağlantıyı test et
+document.addEventListener('DOMContentLoaded', async function() {
+    const isConnected = await checkDatabaseConnection();
+    
+    if (!isConnected) {
+        console.error('Supabase bağlantısı kurulamadı!');
+        // Kullanıcıya hata mesajı göster
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger';
+        errorDiv.innerHTML = 'Veritabanı bağlantısı kurulamadı. Lütfen daha sonra tekrar deneyin.';
+        document.body.insertBefore(errorDiv, document.body.firstChild);
+    }
+    
+    // Login sayfası değilse oturum kontrolü yap
+    if (!window.location.pathname.includes('login.html')) {
+        const isLoggedIn = await adminAuth.checkSession();
+        if (!isLoggedIn) {
+            window.location.href = '/admin/login.html';
+        }
+    }
 });
+
+// Supabase client'ı global olarak kullanılabilir hale getir
+window.supabaseClient = supabaseClient;
+window.adminAuth = adminAuth;
