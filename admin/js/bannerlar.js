@@ -663,6 +663,7 @@ async function editBanner(bannerId) {
         // Modalı aç
         const modal = document.getElementById('addBannerModal');
         if (modal) {
+            modal.classList.remove('hidden');
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
             

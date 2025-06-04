@@ -80,7 +80,7 @@ const mobileMenuBtn = document.querySelector('.mobile-menu');
 const navMenu = document.querySelector('nav ul');
 const bookGrid = document.querySelector('.book-grid');
 const authorGrid = document.querySelector('.author-grid');
-const bannerSlider = document.getElementById('banner-slider');
+const bannerSlider = document.getElementById('banner-container');
 
 // Mobil menü açıp kapatma
 if (mobileMenuBtn && navMenu) {
@@ -179,31 +179,73 @@ async function loadBanners() {
         const banners = await fetchBanners();
         
         if (!banners || banners.length === 0) {
-            console.warn('Banner verileri bulunamadı, varsayılan banner\'lar kullanılıyor.');
-            return; // Varsayılan banner'lar zaten HTML'de var
-        }
-        
-        // HTML oluştur
-        bannerSlider.innerHTML = banners.map((banner, index) => `
-            <div class="slide ${index === 0 ? 'active' : ''}">
-                <div class="slide-bg">
-                    <img src="${banner.image_url}" alt="${banner.title}">
-                </div>
-                <div class="container">
-                    <div class="slide-content">
-                        <h2>${banner.title}</h2>
-                        <p>${banner.description || ''}</p>
-                        ${banner.link ? `<a href="${banner.link}" class="btn btn-primary">Detaylar</a>` : ''}
+            console.warn('Banner verileri bulunamadı, varsayılan banner gösteriliyor.');
+            bannerSlider.innerHTML = `
+                <div class="w-full h-full bg-gradient-to-r from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold text-secondary mb-4">Kritik Yayınları</h2>
+                        <p class="text-gray-600 text-lg">Edebiyatın seçkin eserleri</p>
                     </div>
                 </div>
+            `;
+            return;
+        }
+        
+        // Banner slider HTML'ini oluştur
+        bannerSlider.innerHTML = `
+            <div class="banner-slider w-full h-full relative overflow-hidden">
+                ${banners.map((banner, index) => `
+                    <div class="slide ${index === 0 ? 'active' : ''} absolute inset-0 transition-opacity duration-500 ${index === 0 ? 'opacity-100' : 'opacity-0'}">
+                        <div class="slide-bg w-full h-full relative">
+                            <img src="${banner.image_url}" alt="${banner.title}" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+                        </div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center text-white px-4">
+                                <h2 class="text-3xl md:text-4xl font-bold mb-4">${banner.title}</h2>
+                                ${banner.subtitle ? `<p class="text-xl mb-4">${banner.subtitle}</p>` : ''}
+                                ${banner.description ? `<p class="text-lg mb-6 max-w-2xl">${banner.description}</p>` : ''}
+                                ${banner.link ? `<a href="${banner.link}" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium transition-colors">Detaylar</a>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+                
+                ${banners.length > 1 ? `
+                    <!-- Navigation Arrows -->
+                    <button class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors" onclick="previousSlide()">
+                        <i class="ri-arrow-left-line text-xl"></i>
+                    </button>
+                    <button class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors" onclick="nextSlide()">
+                        <i class="ri-arrow-right-line text-xl"></i>
+                    </button>
+                    
+                    <!-- Dots Indicator -->
+                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                        ${banners.map((_, index) => `
+                            <button class="w-3 h-3 rounded-full transition-colors ${index === 0 ? 'bg-white' : 'bg-white/50'}" onclick="goToSlide(${index})"></button>
+                        `).join('')}
+                    </div>
+                ` : ''}
             </div>
-        `).join('');
+        `;
         
-        // Slider nokta göstergelerini güncelle
-        updateSliderDots();
+        // Slider fonksiyonlarını başlat
+        if (banners.length > 1) {
+            setupBannerSlider(banners.length);
+        }
         
+        console.log('Banner\'lar başarıyla yüklendi ve gösterildi');
     } catch (error) {
-        console.error('Banner yüklenirken hata oluştu:', error);
+        console.error('Banner\'lar yüklenirken hata:', error);
+        bannerSlider.innerHTML = `
+            <div class="w-full h-full bg-red-50 flex items-center justify-center">
+                <div class="text-center text-red-600">
+                    <i class="ri-error-warning-line text-4xl mb-4"></i>
+                    <p>Banner\'lar yüklenirken bir hata oluştu</p>
+                </div>
+            </div>
+        `;
     }
 }
 
@@ -524,4 +566,89 @@ function applyImageOptimizations(img) {
     img.addEventListener('mouseleave', function() {
         this.style.filter = 'contrast(1.05) saturate(1.05)';
     });
+}
+
+// Banner slider fonksiyonları
+let currentSlide = 0;
+let totalSlides = 0;
+let slideInterval;
+
+function setupBannerSlider(slideCount) {
+    totalSlides = slideCount;
+    currentSlide = 0;
+    
+    // Otomatik geçiş başlat
+    startAutoSlide();
+}
+
+function goToSlide(index) {
+    if (index < 0 || index >= totalSlides) return;
+    
+    // Mevcut slide'ı gizle
+    const currentSlideElement = document.querySelector('.slide.active');
+    if (currentSlideElement) {
+        currentSlideElement.classList.remove('opacity-100');
+        currentSlideElement.classList.add('opacity-0');
+        currentSlideElement.classList.remove('active');
+    }
+    
+    // Yeni slide'ı göster
+    const slides = document.querySelectorAll('.slide');
+    if (slides[index]) {
+        slides[index].classList.add('active');
+        slides[index].classList.remove('opacity-0');
+        slides[index].classList.add('opacity-100');
+    }
+    
+    // Dots'ları güncelle
+    updateDots(index);
+    
+    currentSlide = index;
+}
+
+function nextSlide() {
+    const nextIndex = (currentSlide + 1) % totalSlides;
+    goToSlide(nextIndex);
+}
+
+function previousSlide() {
+    const prevIndex = (currentSlide - 1 + totalSlides) % totalSlides;
+    goToSlide(prevIndex);
+}
+
+function updateDots(activeIndex) {
+    const dots = document.querySelectorAll('.banner-slider button[onclick*="goToSlide"]');
+    dots.forEach((dot, index) => {
+        if (index === activeIndex) {
+            dot.classList.remove('bg-white/50');
+            dot.classList.add('bg-white');
+        } else {
+            dot.classList.remove('bg-white');
+            dot.classList.add('bg-white/50');
+        }
+    });
+}
+
+function startAutoSlide() {
+    if (slideInterval) clearInterval(slideInterval);
+    
+    slideInterval = setInterval(() => {
+        nextSlide();
+    }, 5000); // 5 saniyede bir geçiş
+}
+
+function stopAutoSlide() {
+    if (slideInterval) {
+        clearInterval(slideInterval);
+        slideInterval = null;
+    }
+}
+
+// Mouse hover'da otomatik geçişi durdur
+function setupSliderHoverEvents() {
+    const bannerContainer = document.getElementById('banner-container');
+    if (bannerContainer) {
+        bannerContainer.addEventListener('mouseenter', stopAutoSlide);
+        bannerContainer.addEventListener('mouseleave', startAutoSlide);
+    }
 }
