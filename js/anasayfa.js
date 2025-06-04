@@ -38,15 +38,7 @@ async function loadPageBanners(location = 'home') {
         }
         
         if (!banners || banners.length === 0) {
-            console.warn('Banner verileri bulunamadı, varsayılan banner gösteriliyor.');
-            bannerContainer.innerHTML = `
-                <div class="w-full h-full bg-gradient-to-r from-primary/20 to-secondary/20 flex items-center justify-center">
-                    <div class="text-center">
-                        <h2 class="text-3xl font-bold text-secondary mb-4">Kritik Yayınları</h2>
-                        <p class="text-gray-600 text-lg">Edebiyatın seçkin eserleri</p>
-                    </div>
-                </div>
-            `;
+            console.warn('Banner verileri bulunamadı, varsayılan banner korunuyor.');
             return;
         }
         
