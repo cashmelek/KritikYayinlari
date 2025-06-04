@@ -38,8 +38,8 @@ window.addEventListener('load', function() {
         const pageContent = document.getElementById('pageContent');
         
         if (loadingOverlay && pageContent) {
-                loadingOverlay.classList.add('hidden');
-                pageContent.classList.add('loaded');
+            loadingOverlay.classList.add('hidden');
+            pageContent.classList.add('loaded');
         }
     }, 500); // 500ms bekle
 });
@@ -138,26 +138,31 @@ async function loadPageContent() {
         if (!data && window.supabaseClient) {
             console.log('Supabase\'den veri yükleniyor...');
             
-            const { data: supabaseData, error } = await supabaseClient
-            .from('about_page')
-            .select('*')
-            .single();
-        
-        if (error) {
-                console.error('Supabase veri yükleme hatası:', error);
-                loadDefaultContent();
-                return;
-            }
+            try {
+                const { data: supabaseData, error } = await window.supabaseClient
+                    .from('about_page')
+                    .select('*')
+                    .single();
             
-            if (supabaseData) {
-                console.log('Supabase\'den veri yüklendi:', supabaseData);
-                updatePageContent(supabaseData);
-                contentLoaded = true;
+                if (error) {
+                    console.error('Supabase veri yükleme hatası:', error);
+                    loadDefaultContent();
+                    return;
+                }
                 
-                // LocalStorage'a kaydet
-                localStorage.setItem('kritik_about_page_data', JSON.stringify(supabaseData));
-            } else {
-                console.warn('Supabase\'de veri bulunamadı, varsayılan içerik yükleniyor');
+                if (supabaseData) {
+                    console.log('Supabase\'den veri yüklendi:', supabaseData);
+                    updatePageContent(supabaseData);
+                    contentLoaded = true;
+                    
+                    // LocalStorage'a kaydet
+                    localStorage.setItem('kritik_about_page_data', JSON.stringify(supabaseData));
+                } else {
+                    console.warn('Supabase\'de veri bulunamadı, varsayılan içerik yükleniyor');
+                    loadDefaultContent();
+                }
+            } catch (supabaseError) {
+                console.error('Supabase bağlantı hatası:', supabaseError);
                 loadDefaultContent();
             }
         } else if (!data) {
@@ -182,140 +187,130 @@ function updatePageContent(data) {
     try {
         console.log('Sayfa içeriği güncelleniyor:', data);
         
-        // 1. Sayfa başlığı ve alt başlığı
-    const titleElement = document.querySelector('.py-12.bg-gradient-to-r h1.text-3xl');
-        // Hem yeni (page_title) hem de eski (title) formatta veri desteği
+        // 1. Sayfa başlığı ve alt başlığı - null kontrolü ile
+        const titleElement = document.querySelector('.py-12.bg-gradient-to-r h1.text-3xl');
         const title = data.page_title || data.title;
         if (titleElement && title) {
             titleElement.textContent = title;
             document.title = title + ' - Kritik Yayınları';
         }
         
-    const subtitleElement = document.querySelector('.py-12.bg-gradient-to-r p.text-gray-600');
-    if (subtitleElement && data.page_subtitle) {
-        subtitleElement.textContent = data.page_subtitle;
-}
+        const subtitleElement = document.querySelector('.py-12.bg-gradient-to-r p.text-gray-600');
+        if (subtitleElement && data.page_subtitle) {
+            subtitleElement.textContent = data.page_subtitle;
+        }
 
-        // 2. "Biz Kimiz" bölümünü güncelle
-        if (data.about_section_title) {
-    const sectionTitleElement = document.querySelector('#about-section h2.text-2xl');
-            if (sectionTitleElement) {
-        sectionTitleElement.textContent = data.about_section_title;
-            }
-    }
-    
-        // İçerik için hem yeni (about_content) hem de eski (content) formatta veri desteği
-        const content = data.about_content || data.content;
-        if (content) {
-        const aboutContentDiv = document.querySelector('#about-section .prose');
-        if (aboutContentDiv) {
-            // İçeriği paragraf etiketlerine bölerek HTML'e ekle
-                const paragraphs = content.split('\n\n');
-            aboutContentDiv.innerHTML = '';
-            
-            paragraphs.forEach((paragraph, index) => {
-                if (paragraph.trim() !== '') {
-                    const p = document.createElement('p');
-                    p.textContent = paragraph;
-                    
-                    // Son paragraf hariç hepsine mb-4 sınıfı ekle
-                    if (index < paragraphs.length - 1) {
-                        p.classList.add('mb-4');
-                    }
-                    
-                    aboutContentDiv.appendChild(p);
-                }
-            });
-    }
-}
-
-        // 3. Vizyon ve Misyon içeriğini güncelle
-        if (data.vision_content) {
-    const visionElement = document.querySelector('#about-section .md\\:grid-cols-2 .bg-gray-50:first-child p.text-gray-600');
-            if (visionElement) {
-        visionElement.textContent = data.vision_content;
-            }
-    }
-    
-        if (data.mission_content) {
-    const missionElement = document.querySelector('#about-section .md\\:grid-cols-2 .bg-gray-50:last-child p.text-gray-600');
-            if (missionElement) {
-        missionElement.textContent = data.mission_content;
+        // 2. "Biz Kimiz" bölümünü güncelle - null kontrolü ile
+        const aboutSectionTitle = document.querySelector('#about-section h2');
+        if (aboutSectionTitle && data.about_section_title) {
+            aboutSectionTitle.innerHTML = `
+                ${data.about_section_title}
+                <span class="absolute -bottom-1 left-0 w-full h-1 bg-primary"></span>
+            `;
+        }
+        
+        const aboutContent = document.querySelector('#about-section .prose');
+        if (aboutContent && data.about_content) {
+            // Paragrafları ayır ve HTML olarak formatla
+            const paragraphs = data.about_content.split('\n\n').filter(p => p.trim());
+            const formattedContent = paragraphs.map(p => `<p class="mb-4">${p.trim()}</p>`).join('');
+            aboutContent.innerHTML = formattedContent;
+        }
+        
+        // 3. Vizyon ve Misyon bölümlerini güncelle - null kontrolü ile
+        const visionContent = document.querySelector('.bg-gray-50 .text-gray-700');
+        if (visionContent && data.vision_content) {
+            visionContent.textContent = data.vision_content;
+        }
+        
+        const missionContent = document.querySelector('.bg-primary\\/10 .text-gray-700');
+        if (missionContent && data.mission_content) {
+            missionContent.textContent = data.mission_content;
+        }
+        
+        // 4. Timeline öğelerini güncelle - null ve array kontrolü ile
+        if (data.timeline_items && Array.isArray(data.timeline_items) && data.timeline_items.length > 0) {
+            updateTimeline(data.timeline_items);
+        }
+        
+        // 5. Ekip üyelerini güncelle - null ve array kontrolü ile
+        if (data.team_members && Array.isArray(data.team_members) && data.team_members.length > 0) {
+            updateTeamMembers(data.team_members);
+        }
+        
+        console.log('Sayfa içeriği başarıyla güncellendi');
+        
+    } catch (error) {
+        console.error('Sayfa içeriği güncellenirken hata:', error);
     }
 }
 
-        // 4. Zaman çizelgesini güncelle (Kuruluş Hikayemiz)
-        if (data.timeline_items && data.timeline_items.length > 0) {
-    const timelineContainer = document.querySelector('.py-12.bg-gray-50 .relative');
-    
-    if (timelineContainer) {
-        // Mevcut zaman çizelgesi öğelerini temizle
+// Timeline öğelerini güncelle
+function updateTimeline(timelineItems) {
+    try {
+        const timelineContainer = document.querySelector('#timeline-section .space-y-8');
+        if (!timelineContainer) {
+            console.warn('Timeline container bulunamadı');
+            return;
+        }
+        
+        // Mevcut timeline öğelerini temizle
         timelineContainer.innerHTML = '';
         
-        // Yeni zaman çizelgesi öğelerini ekle
-                data.timeline_items.forEach(item => {
+        // Yeni timeline öğelerini ekle
+        timelineItems.forEach((item, index) => {
             const timelineItem = document.createElement('div');
             timelineItem.className = 'timeline-item';
-            
             timelineItem.innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-semibold text-primary mb-2">${item.title}</h3>
-                    <p class="text-gray-600">${item.content}</p>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold text-secondary mb-3">${item.title || 'Başlık Yok'}</h3>
+                    <p class="text-gray-700">${item.content || 'İçerik yok'}</p>
                 </div>
             `;
-            
             timelineContainer.appendChild(timelineItem);
         });
+        
+        console.log('Timeline güncellendi:', timelineItems.length, 'öğe');
+    } catch (error) {
+        console.error('Timeline güncellenirken hata:', error);
     }
 }
 
-        // 5. Ekip üyelerini güncelle
-        if (data.team_members && data.team_members.length > 0) {
-    const teamContainer = document.querySelector('.py-12.bg-white .grid.grid-cols-1.md\\:grid-cols-3');
-    
-    if (teamContainer) {
+// Ekip üyelerini güncelle
+function updateTeamMembers(teamMembers) {
+    try {
+        const teamContainer = document.querySelector('#team-section .grid');
+        if (!teamContainer) {
+            console.warn('Team container bulunamadı');
+            return;
+        }
+        
         // Mevcut ekip üyelerini temizle
         teamContainer.innerHTML = '';
         
         // Yeni ekip üyelerini ekle
-                data.team_members.forEach(member => {
-                    if (!member.name) return; // Boş üyeleri atla
-                    
-            const teamMember = document.createElement('div');
-            teamMember.className = 'bg-white rounded-lg shadow-md overflow-hidden group hover:shadow-lg transition-shadow';
-                    
-                    const imageUrl = member.image || 'images/placeholder.png';
-            
-            teamMember.innerHTML = `
-                <div class="relative overflow-hidden">
-                            <img src="${imageUrl}" alt="${member.name}" class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='images/placeholder.png'">
+        teamMembers.forEach((member, index) => {
+            const memberCard = document.createElement('div');
+            memberCard.className = 'bg-white p-6 rounded-lg shadow-md text-center';
+            memberCard.innerHTML = `
+                <div class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden bg-gray-200">
+                    ${member.image ? 
+                        `<img src="${member.image}" alt="${member.name || 'Ekip Üyesi'}" class="w-full h-full object-cover">` :
+                        `<div class="w-full h-full flex items-center justify-center text-gray-400">
+                            <i class="ri-user-line text-3xl"></i>
+                        </div>`
+                    }
                 </div>
-                <div class="p-4 text-center">
-                    <h3 class="text-lg font-semibold text-secondary mb-1">${member.name}</h3>
-                            <p class="text-primary text-sm font-medium mb-3">${member.position || ''}</p>
-                            <p class="text-gray-600 text-sm mb-4">${member.description || ''}</p>
-                    <div class="flex justify-center space-x-3">
-                        <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                            <i class="ri-twitter-fill text-lg"></i>
-                        </a>
-                        <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                            <i class="ri-linkedin-fill text-lg"></i>
-                        </a>
-                        <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                            <i class="ri-mail-fill text-lg"></i>
-                        </a>
-                    </div>
-                </div>
+                <h3 class="text-lg font-bold text-secondary mb-2">${member.name || 'İsim Belirtilmemiş'}</h3>
+                <p class="text-primary font-medium mb-3">${member.position || 'Pozisyon Belirtilmemiş'}</p>
+                <p class="text-gray-600 text-sm">${member.description || 'Açıklama yok'}</p>
             `;
-            
-            teamContainer.appendChild(teamMember);
+            teamContainer.appendChild(memberCard);
         });
-    }
-} 
-
-        console.log('Hakkımızda sayfası içeriği başarıyla güncellendi');
+        
+        console.log('Ekip üyeleri güncellendi:', teamMembers.length, 'üye');
     } catch (error) {
-        console.error('Sayfa içeriği güncellenirken hata:', error);
+        console.error('Ekip üyeleri güncellenirken hata:', error);
     }
 }
 

@@ -13,8 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
     initTeamMembers();
     
     // Kaydetme butonları için event listener
-    document.getElementById('saveChangesBtn').addEventListener('click', saveChanges);
-    document.getElementById('saveChangesBtnBottom').addEventListener('click', saveChanges);
+    const saveBtn = document.getElementById('saveChangesBtn');
+    const saveBtnBottom = document.getElementById('saveChangesBtnBottom');
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveChanges);
+    }
+    if (saveBtnBottom) {
+        saveBtnBottom.addEventListener('click', saveChanges);
+    }
 });
 
 // Mevcut verileri veritabanından yükle
@@ -25,43 +32,73 @@ async function loadExistingData() {
             return;
         }
         
-        const { data, error } = await supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('about_page')
             .select('*')
             .single();
             
         if (error) {
             console.error('Veri yükleme hatası:', error);
+            // Eğer tablo boşsa veya veri yoksa, varsayılan değerlerle devam et
+            if (error.code === 'PGRST116') {
+                console.log('Henüz veri yok, varsayılan değerler kullanılacak');
+                return;
+            }
+            showNotification('Veriler yüklenirken bir hata oluştu: ' + error.message, 'error');
             return;
         }
         
         if (data) {
             console.log('Mevcut veriler yüklendi:', data);
             
-            // Sayfa başlığı ve alt başlığı
-            if (data.page_title) document.getElementById('pageTitle').value = data.page_title;
-            if (data.page_subtitle) document.getElementById('pageSubtitle').value = data.page_subtitle;
+            // Sayfa başlığı ve alt başlığı - null kontrolü ile
+            const pageTitleEl = document.getElementById('pageTitle');
+            const pageSubtitleEl = document.getElementById('pageSubtitle');
             
-            // Biz Kimiz bölümü
-            if (data.about_section_title) document.getElementById('aboutSectionTitle').value = data.about_section_title;
-            if (data.about_content) document.getElementById('aboutContent').value = data.about_content;
+            if (pageTitleEl && data.page_title) {
+                pageTitleEl.value = data.page_title;
+            }
+            if (pageSubtitleEl && data.page_subtitle) {
+                pageSubtitleEl.value = data.page_subtitle;
+            }
             
-            // Vizyon ve Misyon
-            if (data.vision_content) document.getElementById('visionContent').value = data.vision_content;
-            if (data.mission_content) document.getElementById('missionContent').value = data.mission_content;
+            // Biz Kimiz bölümü - null kontrolü ile
+            const aboutSectionTitleEl = document.getElementById('aboutSectionTitle');
+            const aboutContentEl = document.getElementById('aboutContent');
             
-            // Zaman çizelgesi
-            if (data.timeline_items && data.timeline_items.length > 0) {
+            if (aboutSectionTitleEl && data.about_section_title) {
+                aboutSectionTitleEl.value = data.about_section_title;
+            }
+            if (aboutContentEl && data.about_content) {
+                aboutContentEl.value = data.about_content;
+            }
+            
+            // Vizyon ve Misyon - null kontrolü ile
+            const visionContentEl = document.getElementById('visionContent');
+            const missionContentEl = document.getElementById('missionContent');
+            
+            if (visionContentEl && data.vision_content) {
+                visionContentEl.value = data.vision_content;
+            }
+            if (missionContentEl && data.mission_content) {
+                missionContentEl.value = data.mission_content;
+            }
+            
+            // Zaman çizelgesi - null ve array kontrolü ile
+            if (data.timeline_items && Array.isArray(data.timeline_items) && data.timeline_items.length > 0) {
                 loadTimelineItems(data.timeline_items);
             }
             
-            // Ekip üyeleri
-            if (data.team_members && data.team_members.length > 0) {
+            // Ekip üyeleri - null ve array kontrolü ile
+            if (data.team_members && Array.isArray(data.team_members) && data.team_members.length > 0) {
                 loadTeamMembers(data.team_members);
             }
+            
+            showNotification('Mevcut veriler başarıyla yüklendi', 'success');
         }
     } catch (error) {
         console.error('Mevcut veriler yüklenirken hata oluştu:', error);
+        showNotification('Veriler yüklenirken beklenmeyen bir hata oluştu', 'error');
     }
 }
 
@@ -165,18 +202,32 @@ function loadTeamMembers(teamMembers) {
 
 // Supabase bağlantısını başlat
 function initSupabase() {
-    // Supabase nesnesinin global olarak tanımlandığını varsayalım
-    // supabase değişkeni supabase-config.js dosyasında tanımlanmış olmalı
-    if (!supabase) {
-        showNotification('Supabase bağlantısı başlatılamadı!', 'error');
+    // Supabase nesnesinin global olarak tanımlandığını kontrol et
+    if (!window.supabaseClient) {
+        console.error('Supabase bağlantısı bulunamadı!');
+        showNotification('Veritabanı bağlantısı başlatılamadı!', 'error');
+        return false;
     }
+    console.log('Supabase bağlantısı başarılı');
+    return true;
 }
 
 // Timeline öğeleri için
 function initTimelineItems() {
+    const addTimelineBtn = document.getElementById('addTimelineItemBtn');
+    if (!addTimelineBtn) {
+        console.warn('Timeline ekleme butonu bulunamadı');
+        return;
+    }
+    
     // Yeni timeline öğesi ekleme
-    document.getElementById('addTimelineItemBtn').addEventListener('click', function() {
+    addTimelineBtn.addEventListener('click', function() {
         const timelineItems = document.getElementById('timelineItems');
+        if (!timelineItems) {
+            console.error('Timeline container bulunamadı');
+            return;
+        }
+        
         const newItem = document.createElement('div');
         newItem.className = 'timeline-item border border-gray-200 rounded-lg p-4';
         newItem.innerHTML = `
@@ -194,20 +245,25 @@ function initTimelineItems() {
         timelineItems.appendChild(newItem);
         
         // Yeni eklenen öğe için silme butonuna event listener ekle
-        newItem.querySelector('.delete-timeline-btn').addEventListener('click', function() {
-            showConfirmModal('Bu zaman çizelgesi öğesini silmek istediğinizden emin misiniz?', function() {
-                newItem.remove();
+        const deleteBtn = newItem.querySelector('.delete-timeline-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', function() {
+                showConfirmModal('Bu zaman çizelgesi öğesini silmek istediğinizden emin misiniz?', function() {
+                    newItem.remove();
+                });
             });
-        });
+        }
     });
     
-    // Mevcut timeline öğelerinin silme butonları
+    // Mevcut silme butonları için event listener ekle
     document.querySelectorAll('.delete-timeline-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const timelineItem = this.closest('.timeline-item');
-            showConfirmModal('Bu zaman çizelgesi öğesini silmek istediğinizden emin misiniz?', function() {
-                timelineItem.remove();
-            });
+            const item = this.closest('.timeline-item');
+            if (item) {
+                showConfirmModal('Bu zaman çizelgesi öğesini silmek istediğinizden emin misiniz?', function() {
+                    item.remove();
+                });
+            }
         });
     });
 }
@@ -273,20 +329,35 @@ async function saveChanges(e) {
     if (e) e.preventDefault();
     
     try {
+        // Element kontrollerini yap
+        const pageTitleEl = document.getElementById('pageTitle');
+        const pageSubtitleEl = document.getElementById('pageSubtitle');
+        const aboutSectionTitleEl = document.getElementById('aboutSectionTitle');
+        const aboutContentEl = document.getElementById('aboutContent');
+        const visionContentEl = document.getElementById('visionContent');
+        const missionContentEl = document.getElementById('missionContent');
+        
+        if (!pageTitleEl || !pageSubtitleEl || !aboutSectionTitleEl || !aboutContentEl || !visionContentEl || !missionContentEl) {
+            console.error('Gerekli form elementleri bulunamadı');
+            showNotification('Form elementleri bulunamadı. Sayfa yeniden yüklenecek.', 'error');
+            setTimeout(() => window.location.reload(), 2000);
+            return false;
+        }
+        
         // Bilgileri topla
         const timelineItems = getTimelineItems();
         const teamMembers = getTeamMembers();
         
         const aboutData = {
-            page_title: document.getElementById('pageTitle').value,
-            page_subtitle: document.getElementById('pageSubtitle').value,
-            about_section_title: document.getElementById('aboutSectionTitle').value,
-            about_content: document.getElementById('aboutContent').value,
-            vision_content: document.getElementById('visionContent').value,
-            mission_content: document.getElementById('missionContent').value,
+            page_title: pageTitleEl.value || 'Hakkımızda',
+            page_subtitle: pageSubtitleEl.value || 'Kritik Yayınları\'nın hikayesi ve vizyonu',
+            about_section_title: aboutSectionTitleEl.value || 'Biz Kimiz?',
+            about_content: aboutContentEl.value || '',
+            vision_content: visionContentEl.value || '',
+            mission_content: missionContentEl.value || '',
             timeline_items: timelineItems,
             team_members: teamMembers,
-            updated_at: new Date().toISOString() // Güncellenme tarihini ekle
+            updated_at: new Date().toISOString()
         };
         
         console.log('Kaydedilecek veri:', aboutData);
@@ -295,155 +366,114 @@ async function saveChanges(e) {
         
         // Veritabanına kaydet
         if (window.supabaseClient) {
-            // Önce mevcut veriyi kontrol et, varsa id'yi al
-            const { data: existingData, error: fetchError } = await supabaseClient
-                .from('about_page')
-                .select('id')
-                .limit(1);
-                
-            if (fetchError) {
-                console.error('Mevcut veri kontrolü hatası:', fetchError);
-                showNotification('Veri kontrolü sırasında bir hata oluştu.', 'error');
-                return false;
-            }
-            
-            // Eğer mevcut veri varsa, id'yi ekle
-            if (existingData && existingData.length > 0) {
-                aboutData.id = existingData[0].id;
-            }
-            
-            // Upsert işlemi yap
-            const { data, error } = await supabaseClient
-                .from('about_page')
-                .upsert([aboutData], { 
-                    onConflict: 'id', // id alanına göre çakışma kontrolü
-                    returning: 'minimal' // geriye dönen veri miktarını sınırla
-                });
-                
-            if (error) {
-                console.error('Veritabanı güncelleme hatası:', error);
-                showNotification('Veritabanı güncelleme sırasında bir hata oluştu: ' + error.message, 'error');
-                return false;
-            }
-            
-            // LocalStorage'a verileri kaydet (frontend tarafının görmesi için)
             try {
-                // LocalStorage'a yaz
-                localStorage.setItem('kritik_about_page_data', JSON.stringify(aboutData));
-                
-                // Önceki değeri al ve karşılaştır
-                let oldData = {};
-                try {
-                    const oldDataStr = localStorage.getItem('kritik_about_page_data');
-                    if (oldDataStr) {
-                        oldData = JSON.parse(oldDataStr);
-                    }
-                } catch (e) {
-                    console.warn('Eski veri okunamadı', e);
+                // Önce mevcut veriyi kontrol et, varsa id'yi al
+                const { data: existingData, error: fetchError } = await window.supabaseClient
+                    .from('about_page')
+                    .select('id')
+                    .limit(1);
+                    
+                if (fetchError && fetchError.code !== 'PGRST116') {
+                    console.error('Mevcut veri kontrolü hatası:', fetchError);
+                    throw fetchError;
                 }
                 
-                // Değişiklik yapıldığını belirt
-                const event = new CustomEvent('storage', {
-                    detail: {
-                        key: 'kritik_about_page_data',
-                        oldValue: JSON.stringify(oldData),
-                        newValue: JSON.stringify(aboutData)
-                    }
-                });
-                window.dispatchEvent(event);
+                // Eğer mevcut veri varsa, id'yi ekle
+                if (existingData && existingData.length > 0) {
+                    aboutData.id = existingData[0].id;
+                } else {
+                    // Yeni kayıt için created_at ekle
+                    aboutData.created_at = new Date().toISOString();
+                }
                 
-                // Ayrıca genel güncelleme sistemine de bildir
-                localStorage.setItem('kritik-yayinlari-updates', JSON.stringify({
-                    timestamp: new Date().getTime(),
-                    message: {
-                        type: 'about_page',
-                        action: 'update',
-                        data: aboutData,
-                        timestamp: new Date().toISOString()
-                    }
-                }));
+                // Upsert işlemi yap
+                const { data, error } = await window.supabaseClient
+                    .from('about_page')
+                    .upsert([aboutData], { 
+                        onConflict: 'id',
+                        returning: 'minimal'
+                    });
+                    
+                if (error) {
+                    console.error('Veritabanı güncelleme hatası:', error);
+                    throw error;
+                }
                 
-                // Storage event'ini manuel olarak tetikle (farklı sekmeleri haberdar etmek için)
-                const generalEvent = new CustomEvent('storage', {
-                    detail: {
-                        key: 'kritik-yayinlari-updates',
-                        newValue: JSON.stringify({
-                            timestamp: new Date().getTime(),
-                            message: {
-                                type: 'about_page',
-                                action: 'update',
-                                data: aboutData,
-                                timestamp: new Date().toISOString()
-                            }
-                        })
-                    }
-                });
-                window.dispatchEvent(generalEvent);
+                console.log('Veritabanı güncellemesi başarılı');
                 
-                console.log('LocalStorage ile bildirim gönderildi, frontend güncellenecek');
+            } catch (dbError) {
+                console.error('Veritabanı işlemi başarısız:', dbError);
+                showNotification('Veritabanı güncelleme sırasında bir hata oluştu: ' + dbError.message, 'error');
                 
-                // Başarılı bildirimini göster
-                showNotification('İçerik kaydedildi. Frontend güncelleniyor...');
-            } catch (storageError) {
-                console.warn('LocalStorage\'a kayıt yapılamadı:', storageError);
-                showNotification('İçerik kaydedildi, ancak önbelleğe yazılamadı', 'warning');
-            }
-        } else {
-            console.error('Supabase bağlantısı bulunamadı!');
-            
-            // Supabase bağlantısı yoksa sadece localStorage'a kaydet
-            try {
-                localStorage.setItem('kritik_about_page_data', JSON.stringify(aboutData));
-                
-                // Değişikliği diğer sekmelere/sayfalara bildir
-                const event = new CustomEvent('storage', {
-                    detail: {
-                        key: 'kritik_about_page_data',
-                        newValue: JSON.stringify(aboutData)
-                    }
-                });
-                window.dispatchEvent(event);
-                
-                localStorage.setItem('kritik-yayinlari-updates', JSON.stringify({
-                    timestamp: new Date().getTime(),
-                    message: {
-                        type: 'about_page',
-                        action: 'update',
-                        data: aboutData,
-                        timestamp: new Date().toISOString()
-                    }
-                }));
-                
-                // Storage event'ini manuel olarak tetikle
-                const generalEvent = new CustomEvent('storage', {
-                    detail: {
-                        key: 'kritik-yayinlari-updates',
-                        newValue: JSON.stringify({
-                            timestamp: new Date().getTime(),
-                            message: {
-                                type: 'about_page',
-                                action: 'update',
-                                data: aboutData,
-                                timestamp: new Date().toISOString()
-                            }
-                        })
-                    }
-                });
-                window.dispatchEvent(generalEvent);
-                
-                showNotification('İçerik kaydedildi. Frontend güncelleniyor...');
-            } catch (storageError) {
-                console.error('LocalStorage\'a kayıt yapılamadı:', storageError);
-                showNotification('İçerik kaydedilemedi', 'error');
+                // Veritabanı hatası olsa bile localStorage'a kaydet
+                try {
+                    localStorage.setItem('kritik_about_page_data', JSON.stringify(aboutData));
+                    showNotification('Veriler yerel olarak kaydedildi. Lütfen daha sonra tekrar deneyin.', 'warning');
+                } catch (storageError) {
+                    console.error('LocalStorage kayıt hatası:', storageError);
+                    showNotification('Kaydetme işlemi tamamen başarısız oldu.', 'error');
+                }
                 return false;
             }
         }
         
-        // Sayfa yenilenmesini önlemek için false döndür
-        return false;
+        // LocalStorage'a verileri kaydet (frontend tarafının görmesi için)
+        try {
+            // LocalStorage'a yaz
+            localStorage.setItem('kritik_about_page_data', JSON.stringify(aboutData));
+            
+            // Değişiklik yapıldığını belirt
+            const event = new CustomEvent('storage', {
+                detail: {
+                    key: 'kritik_about_page_data',
+                    newValue: JSON.stringify(aboutData)
+                }
+            });
+            window.dispatchEvent(event);
+            
+            // Ayrıca genel güncelleme sistemine de bildir
+            localStorage.setItem('kritik-yayinlari-updates', JSON.stringify({
+                timestamp: new Date().getTime(),
+                message: {
+                    type: 'about_page',
+                    action: 'update',
+                    data: aboutData,
+                    timestamp: new Date().toISOString()
+                }
+            }));
+            
+            // Storage event'ini manuel olarak tetikle (farklı sekmeleri haberdar etmek için)
+            const generalEvent = new CustomEvent('storage', {
+                detail: {
+                    key: 'kritik-yayinlari-updates',
+                    newValue: JSON.stringify({
+                        timestamp: new Date().getTime(),
+                        message: {
+                            type: 'about_page',
+                            action: 'update',
+                            data: aboutData,
+                            timestamp: new Date().toISOString()
+                        }
+                    })
+                }
+            });
+            window.dispatchEvent(generalEvent);
+            
+            console.log('LocalStorage ile bildirim gönderildi, frontend güncellenecek');
+            
+            // Başarılı bildirimini göster
+            showNotification('Hakkımızda sayfası başarıyla güncellendi!', 'success');
+            
+        } catch (storageError) {
+            console.warn('LocalStorage\'a kayıt yapılamadı:', storageError);
+            showNotification('İçerik kaydedildi, ancak önbelleğe yazılamadı', 'warning');
+        }
+        
+        return true;
+        
     } catch (error) {
-        console.error('Kaydetme hatası:', error);
-        showNotification('Kaydetme işlemi sırasında bir hata oluştu!', 'error');
+        console.error('Kaydetme işlemi sırasında bir hata oluştu:', error);
+        showNotification('Kaydetme işlemi sırasında bir hata oluştu: ' + error.message, 'error');
         return false;
     }
 }

@@ -19,8 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
     initBookstoreHours();
     
     // Kaydetme butonları için event listener
-    document.getElementById('saveChangesBtn').addEventListener('click', saveChanges);
-    document.getElementById('saveChangesBtnBottom').addEventListener('click', saveChanges);
+    const saveBtn = document.getElementById('saveChangesBtn');
+    const saveBtnBottom = document.getElementById('saveChangesBtnBottom');
+    
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveChanges);
+    }
+    if (saveBtnBottom) {
+        saveBtnBottom.addEventListener('click', saveChanges);
+    }
 });
 
 // Mevcut verileri veritabanından yükle
@@ -33,65 +40,69 @@ async function loadExistingData() {
         
         console.log('Veritabanından mevcut veriler yükleniyor...');
         
-        const { data, error } = await supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('contact_page')
             .select('*')
             .single();
             
         if (error) {
             console.error('Veri yükleme hatası:', error);
+            // Eğer tablo boşsa veya veri yoksa, varsayılan değerlerle devam et
+            if (error.code === 'PGRST116') {
+                console.log('Henüz veri yok, varsayılan değerler kullanılacak');
+                return;
+            }
+            showNotification('Veriler yüklenirken bir hata oluştu: ' + error.message, 'error');
             return;
         }
         
         if (data) {
             console.log('Mevcut veriler yüklendi:', data);
             
-            // Adres
-            const addressElement = document.getElementById('address');
+            // Adres - null kontrolü ile
+            const addressElement = document.getElementById('addressInfo');
             if (addressElement && data.address) {
                 addressElement.value = data.address;
-            } else if (addressElement) {
-                addressElement.value = '';
             }
             
-            // Harita iframe
+            // Harita iframe - null kontrolü ile
             const mapIframeElement = document.getElementById('mapIframe');
             if (mapIframeElement && data.map_iframe) {
                 mapIframeElement.value = data.map_iframe;
-            } else if (mapIframeElement) {
-                mapIframeElement.value = '';
             }
             
-            // Form aktif/pasif
+            // Form aktif/pasif - null kontrolü ile
             const formEnabledElement = document.getElementById('formEnabled');
             if (formEnabledElement) {
                 formEnabledElement.checked = data.enable_contact_form !== false;
             }
             
-            // Başarı mesajı
+            // Başarı mesajı - null kontrolü ile
             const successMessageElement = document.getElementById('successMessage');
-            if (successMessageElement && data.success_message) {
-                successMessageElement.value = data.success_message;
-            } else if (successMessageElement) {
-                successMessageElement.value = 'Mesajınız için teşekkür ederiz! En kısa sürede size dönüş yapacağız.';
+            if (successMessageElement) {
+                if (data.success_message) {
+                    successMessageElement.value = data.success_message;
+                } else {
+                    successMessageElement.value = 'Mesajınız için teşekkür ederiz! En kısa sürede size dönüş yapacağız.';
+                }
             }
             
-            // Telefon numaraları
+            // Telefon numaraları - null ve array kontrolü ile
             if (data.phone_numbers && Array.isArray(data.phone_numbers) && data.phone_numbers.length > 0) {
                 loadPhoneNumbers(data.phone_numbers);
             }
             
-            // E-posta adresleri
+            // E-posta adresleri - null ve array kontrolü ile
             if (data.email_addresses && Array.isArray(data.email_addresses) && data.email_addresses.length > 0) {
                 loadEmailAddresses(data.email_addresses);
             }
             
-            // Ofis saatleri
+            // Ofis saatleri - null ve array kontrolü ile
             if (data.office_hours && Array.isArray(data.office_hours) && data.office_hours.length > 0) {
                 loadOfficeHours(data.office_hours);
             }
             
-            // Kitabevi saatleri
+            // Kitabevi saatleri - null ve array kontrolü ile
             if (data.bookstore_hours && Array.isArray(data.bookstore_hours) && data.bookstore_hours.length > 0) {
                 loadBookstoreHours(data.bookstore_hours);
             }
@@ -102,17 +113,20 @@ async function loadExistingData() {
         }
     } catch (error) {
         console.error('Mevcut veriler yüklenirken hata oluştu:', error);
-        showNotification('Veriler yüklenirken bir hata oluştu', 'error');
+        showNotification('Veriler yüklenirken beklenmeyen bir hata oluştu', 'error');
     }
 }
 
 // Supabase bağlantısını başlat
 function initSupabase() {
-    // Supabase nesnesinin global olarak tanımlandığını varsayalım
-    // supabase değişkeni supabase-config.js dosyasında tanımlanmış olmalı
-    if (!supabase) {
-        showNotification('Supabase bağlantısı başlatılamadı!', 'error');
+    // Supabase nesnesinin global olarak tanımlandığını kontrol et
+    if (!window.supabaseClient) {
+        console.error('Supabase bağlantısı bulunamadı!');
+        showNotification('Veritabanı bağlantısı başlatılamadı!', 'error');
+        return false;
     }
+    console.log('Supabase bağlantısı başarılı');
+    return true;
 }
 
 // Telefon numaraları işlemleri
@@ -321,6 +335,15 @@ async function saveChanges(e) {
     if (e) e.preventDefault();
     
     try {
+        // Element kontrollerini yap
+        const addressEl = document.getElementById('addressInfo');
+        const mapIframeEl = document.getElementById('mapIframe');
+        const formEnabledEl = document.getElementById('formEnabled');
+        const successMessageEl = document.getElementById('successMessage');
+        const hoursAdditionalInfoEl = document.getElementById('hoursAdditionalInfo');
+        const contactFormTitleEl = document.getElementById('contactFormTitle');
+        const privacyTextEl = document.getElementById('privacyText');
+        
         // Verileri topla
         const phoneNumbers = getPhoneNumbers();
         const emailAddresses = getEmailAddresses();
@@ -328,18 +351,18 @@ async function saveChanges(e) {
         const bookstoreHours = getBookstoreHours();
         
         const contactData = {
-            address: document.getElementById('address').value,
-            map_iframe: document.getElementById('mapIframe').value,
-            enable_contact_form: document.getElementById('formEnabled').checked,
-            success_message: document.getElementById('successMessage').value,
+            address: addressEl ? addressEl.value : '',
+            map_iframe: mapIframeEl ? mapIframeEl.value : '',
+            enable_contact_form: formEnabledEl ? formEnabledEl.checked : true,
+            success_message: successMessageEl ? successMessageEl.value : 'Mesajınız için teşekkür ederiz! En kısa sürede size dönüş yapacağız.',
             phone_numbers: phoneNumbers,
             email_addresses: emailAddresses,
             office_hours: officeHours,
             bookstore_hours: bookstoreHours,
-            hours_additional_info: document.getElementById('hoursAdditionalInfo').value,
-            contact_form_title: document.getElementById('contactFormTitle').value,
-            privacy_text: document.getElementById('privacyText').value,
-            updated_at: new Date().toISOString() // Güncellenme tarihini ekle
+            hours_additional_info: hoursAdditionalInfoEl ? hoursAdditionalInfoEl.value : '',
+            contact_form_title: contactFormTitleEl ? contactFormTitleEl.value : 'İletişim Formu',
+            privacy_text: privacyTextEl ? privacyTextEl.value : '',
+            updated_at: new Date().toISOString()
         };
         
         console.log('Kaydedilecek iletişim verileri:', contactData);
@@ -350,154 +373,114 @@ async function saveChanges(e) {
         
         // Veritabanına kaydet
         if (window.supabaseClient) {
-            // Önce mevcut veriyi kontrol et, varsa id'yi al
-            const { data: existingData, error: fetchError } = await supabaseClient
-                .from('contact_page')
-                .select('id')
-                .limit(1);
-                
-            if (fetchError) {
-                console.error('Mevcut veri kontrolü hatası:', fetchError);
-                showNotification('Veri kontrolü sırasında bir hata oluştu.', 'error');
-                return false;
-            }
-            
-            // Eğer mevcut veri varsa, id'yi ekle
-            if (existingData && existingData.length > 0) {
-                contactData.id = existingData[0].id;
-            }
-            
-            // Upsert işlemi yap
-            const { data, error } = await supabaseClient
-                .from('contact_page')
-                .upsert([contactData], { 
-                    onConflict: 'id', // id alanına göre çakışma kontrolü
-                    returning: 'minimal' // geriye dönen veri miktarını sınırla
-                });
-                
-            if (error) {
-                console.error('Veritabanı güncelleme hatası:', error);
-                showNotification('Veritabanı güncelleme sırasında bir hata oluştu: ' + error.message, 'error');
-                return false;
-            }
-            
-            // LocalStorage'a verileri kaydet (frontend tarafının görmesi için)
             try {
-                // LocalStorage'a yaz
-                localStorage.setItem('kritik_contact_page_data', JSON.stringify(contactData));
-                
-                // Önceki değeri al ve karşılaştır
-                let oldData = {};
-                try {
-                    const oldDataStr = localStorage.getItem('kritik_contact_page_data');
-                    if (oldDataStr) {
-                        oldData = JSON.parse(oldDataStr);
-                    }
-                } catch (e) {
-                    console.warn('Eski veri okunamadı', e);
+                // Önce mevcut veriyi kontrol et, varsa id'yi al
+                const { data: existingData, error: fetchError } = await window.supabaseClient
+                    .from('contact_page')
+                    .select('id')
+                    .limit(1);
+                    
+                if (fetchError && fetchError.code !== 'PGRST116') {
+                    console.error('Mevcut veri kontrolü hatası:', fetchError);
+                    throw fetchError;
                 }
                 
-                // Değişiklik yapıldığını belirt
-                const event = new CustomEvent('storage', {
-                    detail: {
-                        key: 'kritik_contact_page_data',
-                        oldValue: JSON.stringify(oldData),
-                        newValue: JSON.stringify(contactData)
-                    }
-                });
-                window.dispatchEvent(event);
+                // Eğer mevcut veri varsa, id'yi ekle
+                if (existingData && existingData.length > 0) {
+                    contactData.id = existingData[0].id;
+                } else {
+                    // Yeni kayıt için created_at ekle
+                    contactData.created_at = new Date().toISOString();
+                }
                 
-                // Ayrıca genel güncelleme sistemine de bildir
-                localStorage.setItem('kritik-yayinlari-updates', JSON.stringify({
-                    timestamp: new Date().getTime(),
-                    message: {
-                        type: 'contact_page',
-                        action: 'update',
-                        data: contactData,
-                        timestamp: new Date().toISOString()
-                    }
-                }));
+                // Upsert işlemi yap
+                const { data, error } = await window.supabaseClient
+                    .from('contact_page')
+                    .upsert([contactData], { 
+                        onConflict: 'id',
+                        returning: 'minimal'
+                    });
+                    
+                if (error) {
+                    console.error('Veritabanı güncelleme hatası:', error);
+                    throw error;
+                }
                 
-                // Storage event'ini manuel olarak tetikle (farklı sekmeleri haberdar etmek için)
-                const generalEvent = new CustomEvent('storage', {
-                    detail: {
-                        key: 'kritik-yayinlari-updates',
-                        newValue: JSON.stringify({
-                            timestamp: new Date().getTime(),
-                            message: {
-                                type: 'contact_page',
-                                action: 'update',
-                                data: contactData,
-                                timestamp: new Date().toISOString()
-                            }
-                        })
-                    }
-                });
-                window.dispatchEvent(generalEvent);
+                console.log('Veritabanı güncellemesi başarılı');
                 
-                console.log('LocalStorage ile bildirim gönderildi, frontend güncellenecek');
+            } catch (dbError) {
+                console.error('Veritabanı işlemi başarısız:', dbError);
+                showNotification('Veritabanı güncelleme sırasında bir hata oluştu: ' + dbError.message, 'error');
                 
-                // Başarılı bildirimini göster
-                showNotification('İçerik kaydedildi. Frontend güncelleniyor...');
-            } catch (storageError) {
-                console.warn('LocalStorage\'a kayıt yapılamadı:', storageError);
-                showNotification('İçerik kaydedildi, ancak önbelleğe yazılamadı', 'warning');
-            }
-        } else {
-            console.error('Supabase bağlantısı bulunamadı!');
-            
-            // Supabase bağlantısı yoksa sadece localStorage'a kaydet
-            try {
-                localStorage.setItem('kritik_contact_page_data', JSON.stringify(contactData));
-                
-                // Değişikliği diğer sekmelere/sayfalara bildir
-                const event = new CustomEvent('storage', {
-                    detail: {
-                        key: 'kritik_contact_page_data',
-                        newValue: JSON.stringify(contactData)
-                    }
-                });
-                window.dispatchEvent(event);
-                
-                localStorage.setItem('kritik-yayinlari-updates', JSON.stringify({
-                    timestamp: new Date().getTime(),
-                    message: {
-                        type: 'contact_page',
-                        action: 'update',
-                        data: contactData,
-                        timestamp: new Date().toISOString()
-                    }
-                }));
-                
-                // Storage event'ini manuel olarak tetikle
-                const generalEvent = new CustomEvent('storage', {
-                    detail: {
-                        key: 'kritik-yayinlari-updates',
-                        newValue: JSON.stringify({
-                            timestamp: new Date().getTime(),
-                            message: {
-                                type: 'contact_page',
-                                action: 'update',
-                                data: contactData,
-                                timestamp: new Date().toISOString()
-                            }
-                        })
-                    }
-                });
-                window.dispatchEvent(generalEvent);
-                
-                showNotification('İçerik kaydedildi. Frontend güncelleniyor...');
-            } catch (storageError) {
-                console.error('LocalStorage\'a kayıt yapılamadı:', storageError);
-                showNotification('İçerik kaydedilemedi', 'error');
+                // Veritabanı hatası olsa bile localStorage'a kaydet
+                try {
+                    localStorage.setItem('kritik_contact_page_data', JSON.stringify(contactData));
+                    showNotification('Veriler yerel olarak kaydedildi. Lütfen daha sonra tekrar deneyin.', 'warning');
+                } catch (storageError) {
+                    console.error('LocalStorage kayıt hatası:', storageError);
+                    showNotification('Kaydetme işlemi tamamen başarısız oldu.', 'error');
+                }
                 return false;
             }
         }
         
+        // LocalStorage'a verileri kaydet (frontend tarafının görmesi için)
+        try {
+            // LocalStorage'a yaz
+            localStorage.setItem('kritik_contact_page_data', JSON.stringify(contactData));
+            
+            // Değişiklik yapıldığını belirt
+            const event = new CustomEvent('storage', {
+                detail: {
+                    key: 'kritik_contact_page_data',
+                    newValue: JSON.stringify(contactData)
+                }
+            });
+            window.dispatchEvent(event);
+            
+            // Ayrıca genel güncelleme sistemine de bildir
+            localStorage.setItem('kritik-yayinlari-updates', JSON.stringify({
+                timestamp: new Date().getTime(),
+                message: {
+                    type: 'contact_page',
+                    action: 'update',
+                    data: contactData,
+                    timestamp: new Date().toISOString()
+                }
+            }));
+            
+            // Storage event'ini manuel olarak tetikle (farklı sekmeleri haberdar etmek için)
+            const generalEvent = new CustomEvent('storage', {
+                detail: {
+                    key: 'kritik-yayinlari-updates',
+                    newValue: JSON.stringify({
+                        timestamp: new Date().getTime(),
+                        message: {
+                            type: 'contact_page',
+                            action: 'update',
+                            data: contactData,
+                            timestamp: new Date().toISOString()
+                        }
+                    })
+                }
+            });
+            window.dispatchEvent(generalEvent);
+            
+            console.log('LocalStorage ile bildirim gönderildi, frontend güncellenecek');
+            
+            // Başarılı bildirimini göster
+            showNotification('İletişim sayfası başarıyla güncellendi!', 'success');
+            
+        } catch (storageError) {
+            console.warn('LocalStorage\'a kayıt yapılamadı:', storageError);
+            showNotification('İçerik kaydedildi, ancak önbelleğe yazılamadı', 'warning');
+        }
+        
         console.log('İletişim bilgileri başarıyla kaydedildi');
-        return false;
+        return true;
+        
     } catch (error) {
-        console.error('Kaydetme hatası:', error);
+        console.error('Kaydetme işlemi sırasında bir hata oluştu:', error);
         showNotification('Kaydetme işlemi sırasında bir hata oluştu: ' + error.message, 'error');
         return false;
     }
