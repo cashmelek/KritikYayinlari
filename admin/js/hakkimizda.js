@@ -387,19 +387,65 @@ async function saveChanges(e) {
                 }
                 
                 // Upsert işlemi yap
-                const { data, error } = await window.supabaseClient
+                const { data: upsertData, error } = await window.supabaseClient
                     .from('about_page')
                     .upsert([aboutData], { 
                         onConflict: 'id',
-                        returning: 'minimal'
-                    });
+                        returning: 'representation'
+                    })
+                    .select();
                     
                 if (error) {
                     console.error('Veritabanı güncelleme hatası:', error);
                     throw error;
                 }
                 
-                console.log('Veritabanı güncellemesi başarılı');
+                console.log('Veritabanı güncellemesi başarılı:', upsertData);
+                
+                // Başarılı güncelleme sonrası frontend'e bildirim gönder
+                if (upsertData && upsertData.length > 0) {
+                    const updatedData = upsertData[0];
+                    
+                    // LocalStorage'a güncel veriyi kaydet
+                    try {
+                        localStorage.setItem('kritik_about_page_data', JSON.stringify(updatedData));
+                        
+                        // Frontend'e bildirim gönder (aynı domain içinde)
+                        const event = new CustomEvent('storage', {
+                            detail: {
+                                key: 'kritik_about_page_data',
+                                newValue: JSON.stringify(updatedData)
+                            }
+                        });
+                        window.dispatchEvent(event);
+                        
+                        // Genel güncelleme sistemi
+                        const updateMessage = {
+                            timestamp: new Date().getTime(),
+                            message: {
+                                type: 'about_page',
+                                action: 'update',
+                                data: updatedData,
+                                timestamp: new Date().toISOString()
+                            }
+                        };
+                        
+                        localStorage.setItem('kritik-yayinlari-updates', JSON.stringify(updateMessage));
+                        
+                        const generalEvent = new CustomEvent('storage', {
+                            detail: {
+                                key: 'kritik-yayinlari-updates',
+                                newValue: JSON.stringify(updateMessage)
+                            }
+                        });
+                        window.dispatchEvent(generalEvent);
+                        
+                        console.log('Frontend bildirim sistemi tetiklendi');
+                        
+                    } catch (storageError) {
+                        console.warn('LocalStorage işlemi başarısız:', storageError);
+                    }
+                }
                 
             } catch (dbError) {
                 console.error('Veritabanı işlemi başarısız:', dbError);
@@ -415,59 +461,13 @@ async function saveChanges(e) {
                 }
                 return false;
             }
+        } else {
+            showNotification('Supabase bağlantısı bulunamadı', 'error');
+            return false;
         }
         
-        // LocalStorage'a verileri kaydet (frontend tarafının görmesi için)
-        try {
-            // LocalStorage'a yaz
-            localStorage.setItem('kritik_about_page_data', JSON.stringify(aboutData));
-            
-            // Değişiklik yapıldığını belirt
-            const event = new CustomEvent('storage', {
-                detail: {
-                    key: 'kritik_about_page_data',
-                    newValue: JSON.stringify(aboutData)
-                }
-            });
-            window.dispatchEvent(event);
-            
-            // Ayrıca genel güncelleme sistemine de bildir
-            localStorage.setItem('kritik-yayinlari-updates', JSON.stringify({
-                timestamp: new Date().getTime(),
-                message: {
-                    type: 'about_page',
-                    action: 'update',
-                    data: aboutData,
-                    timestamp: new Date().toISOString()
-                }
-            }));
-            
-            // Storage event'ini manuel olarak tetikle (farklı sekmeleri haberdar etmek için)
-            const generalEvent = new CustomEvent('storage', {
-                detail: {
-                    key: 'kritik-yayinlari-updates',
-                    newValue: JSON.stringify({
-                        timestamp: new Date().getTime(),
-                        message: {
-                            type: 'about_page',
-                            action: 'update',
-                            data: aboutData,
-                            timestamp: new Date().toISOString()
-                        }
-                    })
-                }
-            });
-            window.dispatchEvent(generalEvent);
-            
-            console.log('LocalStorage ile bildirim gönderildi, frontend güncellenecek');
-            
-            // Başarılı bildirimini göster
-            showNotification('Hakkımızda sayfası başarıyla güncellendi!', 'success');
-            
-        } catch (storageError) {
-            console.warn('LocalStorage\'a kayıt yapılamadı:', storageError);
-            showNotification('İçerik kaydedildi, ancak önbelleğe yazılamadı', 'warning');
-        }
+        // Başarılı bildirimini göster
+        showNotification('Hakkımızda sayfası başarıyla güncellendi!', 'success');
         
         return true;
         
@@ -558,4 +558,66 @@ function showConfirmModal(message, onConfirm) {
     
     confirmBtn.addEventListener('click', confirmAction);
     cancelBtn.addEventListener('click', cancelAction);
-} 
+}
+
+// Debug fonksiyonu - console'da çağırılabilir
+window.debugAdminHakkimizda = function() {
+    console.log('=== ADMIN HAKKIMIZDA DEBUG BİLGİLERİ ===');
+    console.log('Supabase Client:', !!window.supabaseClient);
+    
+    // Form elementlerini kontrol et
+    const elements = {
+        pageTitle: document.getElementById('pageTitle'),
+        pageSubtitle: document.getElementById('pageSubtitle'),
+        aboutSectionTitle: document.getElementById('aboutSectionTitle'),
+        aboutContent: document.getElementById('aboutContent'),
+        visionContent: document.getElementById('visionContent'),
+        missionContent: document.getElementById('missionContent')
+    };
+    
+    console.log('Form Elements:', elements);
+    
+    // Timeline ve ekip üyelerini kontrol et
+    const timelineItems = getTimelineItems();
+    const teamMembers = getTeamMembers();
+    
+    console.log('Timeline Items:', timelineItems);
+    console.log('Team Members:', teamMembers);
+    
+    // LocalStorage kontrolü
+    const storedData = localStorage.getItem('kritik_about_page_data');
+    if (storedData) {
+        try {
+            const data = JSON.parse(storedData);
+            console.log('LocalStorage Data:', data);
+        } catch (error) {
+            console.log('LocalStorage Parse Error:', error);
+        }
+    } else {
+        console.log('LocalStorage: Veri yok');
+    }
+    
+    // Supabase'den güncel veri çek
+    if (window.supabaseClient) {
+        window.supabaseClient
+            .from('about_page')
+            .select('*')
+            .single()
+            .then(({ data, error }) => {
+                if (error) {
+                    console.log('Supabase Error:', error);
+                } else {
+                    console.log('Supabase Current Data:', data);
+                }
+            });
+    }
+    
+    console.log('=== ADMIN DEBUG BİTİŞ ===');
+};
+
+// Test kaydetme fonksiyonu
+window.testSaveHakkimizda = async function() {
+    console.log('Test kaydetme işlemi başlatılıyor...');
+    const result = await saveChanges();
+    console.log('Test kaydetme sonucu:', result);
+}; 

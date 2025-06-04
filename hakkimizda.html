@@ -217,52 +217,19 @@
 </section>
 
 <!-- Kuruluş Hikayemiz -->
-<section class="py-12 bg-gray-50">
+<section id="timeline-section" class="py-12 bg-gray-50">
     <div class="container mx-auto px-4">
         <div class="max-w-4xl mx-auto">
             <h2 class="text-2xl font-bold text-secondary mb-8 text-center">Kuruluş Hikayemiz</h2>
             
             <div class="relative">
-                <!-- Timeline Items -->
-                <div class="timeline-item">
-                    <div class="bg-white p-6 rounded-lg shadow-sm">
-                        <h3 class="text-xl font-semibold text-primary mb-2">2010 - Yolculuğun Başlangıcı</h3>
-                        <p class="text-gray-600">Kritik Yayınları, İstanbul'da küçük bir ofiste, edebiyata gönül vermiş bir grup yayıncı tarafından kuruldu. İlk yılında 5 kitap yayınlayarak sektöre adım attı.</p>
-                    </div>
-                </div>
-                
-                <div class="timeline-item">
-                    <div class="bg-white p-6 rounded-lg shadow-sm">
-                        <h3 class="text-xl font-semibold text-primary mb-2">2012 - Büyüme Dönemi</h3>
-                        <p class="text-gray-600">Artan talep üzerine kadromuzu genişlettik ve yeni yazarlarla çalışmaya başladık. Bu dönemde yıllık yayın sayımız 20'ye yükseldi.</p>
-                    </div>
-                </div>
-                
-                <div class="timeline-item">
-                    <div class="bg-white p-6 rounded-lg shadow-sm">
-                        <h3 class="text-xl font-semibold text-primary mb-2">2015 - Uluslararası Açılım</h3>
-                        <p class="text-gray-600">Dünya edebiyatından önemli eserleri Türkçeye kazandırmaya başladık. Çeviri kitap kataloğumuzu oluşturduk ve uluslararası yazarlarla anlaşmalar imzaladık.</p>
-                    </div>
-                </div>
-                
-                <div class="timeline-item">
-                    <div class="bg-white p-6 rounded-lg shadow-sm">
-                        <h3 class="text-xl font-semibold text-primary mb-2">2018 - Dijital Dönüşüm</h3>
-                        <p class="text-gray-600">E-kitap yayıncılığına adım attık ve dijital platformlarda varlığımızı güçlendirdik. Sosyal medya kanallarımızı aktif kullanmaya başlayarak daha geniş kitlelere ulaştık.</p>
-                    </div>
-                </div>
-                
-                <div class="timeline-item">
-                    <div class="bg-white p-6 rounded-lg shadow-sm">
-                        <h3 class="text-xl font-semibold text-primary mb-2">2020 - 10. Yıl</h3>
-                        <p class="text-gray-600">Onuncu yılımızda 500. kitabımızı yayınladık ve yeni ofisimize taşındık. Ayrıca "Genç Yazarlar Programı"nı başlatarak edebiyat dünyasına yeni yetenekler kazandırmayı hedefledik.</p>
-                    </div>
-                </div>
-                
-                <div class="timeline-item">
-                    <div class="bg-white p-6 rounded-lg shadow-sm">
-                        <h3 class="text-xl font-semibold text-primary mb-2">2023 - Bugün</h3>
-                        <p class="text-gray-600">Bugün 50'den fazla çalışanımız, 200'ü aşkın yazarımız ve 1000'in üzerinde kitap başlığıyla Türkiye'nin önde gelen yayınevleri arasında yer alıyoruz. Misyonumuza bağlı kalarak, edebiyatın gücünü her okuyucuya ulaştırmak için çalışmaya devam ediyoruz.</p>
+                <!-- Timeline Items - Admin panelinden yönetilir -->
+                <div class="space-y-8">
+                    <!-- Timeline öğeleri JavaScript ile dinamik olarak yüklenecek -->
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="ri-time-line text-4xl mb-4"></i>
+                        <p>Henüz timeline öğesi eklenmemiş.</p>
+                        <p class="text-sm mt-2">Admin panelinden timeline öğeleri ekleyebilirsiniz.</p>
                     </div>
                 </div>
             </div>
@@ -271,79 +238,17 @@
 </section>
 
 <!-- Ekibimiz -->
-<section class="py-12 bg-white">
+<section id="team-section" class="py-12 bg-white">
     <div class="container mx-auto px-4">
         <div class="max-w-5xl mx-auto">
             <h2 class="text-2xl font-bold text-secondary mb-8 text-center">Ekibimiz</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Ekip Üyesi 1 -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden group hover:shadow-lg transition-shadow">
-                    <div class="relative overflow-hidden">
-                    <img src="images/placeholder.png" alt="Ahmet Yılmaz" class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='images/placeholder.png'">
-                    </div>
-                    <div class="p-4 text-center">
-                        <h3 class="text-lg font-semibold text-secondary mb-1">Ahmet Yılmaz</h3>
-                        <p class="text-primary text-sm font-medium mb-3">Genel Yayın Yönetmeni</p>
-                        <p class="text-gray-600 text-sm mb-4">20 yıllık yayıncılık deneyimi ile Kritik Yayınları'nın kurucu ortağı ve Genel Yayın Yönetmeni.</p>
-                        <div class="flex justify-center space-x-3">
-                            <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                                <i class="ri-twitter-fill text-lg"></i>
-                            </a>
-                            <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                                <i class="ri-linkedin-fill text-lg"></i>
-                            </a>
-                            <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                                <i class="ri-mail-fill text-lg"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Ekip Üyesi 2 -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden group hover:shadow-lg transition-shadow">
-                    <div class="relative overflow-hidden">
-                        <img src="images/placeholder.png" alt="Ayşe Kaya" class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='images/placeholder.png'">
-                    </div>
-                    <div class="p-4 text-center">
-                        <h3 class="text-lg font-semibold text-secondary mb-1">Ayşe Kaya</h3>
-                        <p class="text-primary text-sm font-medium mb-3">Editör</p>
-                        <p class="text-gray-600 text-sm mb-4">Türk Dili ve Edebiyatı eğitimi sonrası 15 yıldır editörlük yapıyor. Çağdaş Türk edebiyatı alanında uzman.</p>
-                        <div class="flex justify-center space-x-3">
-                            <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                                <i class="ri-twitter-fill text-lg"></i>
-                            </a>
-                            <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                                <i class="ri-linkedin-fill text-lg"></i>
-                            </a>
-                            <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                                <i class="ri-mail-fill text-lg"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Ekip Üyesi 3 -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden group hover:shadow-lg transition-shadow">
-                    <div class="relative overflow-hidden">
-                        <img src="images/placeholder.png" alt="Mehmet Demir" class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='images/placeholder.png'">
-                    </div>
-                    <div class="p-4 text-center">
-                        <h3 class="text-lg font-semibold text-secondary mb-1">Mehmet Demir</h3>
-                        <p class="text-primary text-sm font-medium mb-3">Tasarım Direktörü</p>
-                        <p class="text-gray-600 text-sm mb-4">10 yıldır kitap tasarımı üzerine çalışıyor. Kritik Yayınları'nın görsel kimliğinin mimarı.</p>
-                        <div class="flex justify-center space-x-3">
-                            <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                                <i class="ri-twitter-fill text-lg"></i>
-                            </a>
-                            <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                                <i class="ri-linkedin-fill text-lg"></i>
-                            </a>
-                            <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                                <i class="ri-mail-fill text-lg"></i>
-                            </a>
-                        </div>
-                    </div>
+                <!-- Ekip üyeleri JavaScript ile dinamik olarak yüklenecek -->
+                <div class="col-span-full text-center py-8 text-gray-500">
+                    <i class="ri-team-line text-4xl mb-4"></i>
+                    <p>Henüz ekip üyesi eklenmemiş.</p>
+                    <p class="text-sm mt-2">Admin panelinden ekip üyeleri ekleyebilirsiniz.</p>
                 </div>
             </div>
         </div>

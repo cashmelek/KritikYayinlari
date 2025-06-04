@@ -5,6 +5,8 @@
 let contentLoaded = false;
 // Güncelleme kontrolü için interval ID
 let updateCheckInterval = null;
+// Supabase subscription
+let supabaseSubscription = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Yükleniyor animasyonunu göster
@@ -18,17 +20,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Supabase bağlantısını kontrol et
     if (!window.supabaseClient) {
-        console.error('Supabase bağlantısı bulunamadı, LocalStorage kontrolü yapılacak');
+        console.error('Supabase bağlantısı bulunamadı');
+        loadDefaultContent();
+        return;
     }
     
-    // Sayfa içeriğini yükle (önce localStorage'dan, yoksa Supabase'den)
+    // Sayfa içeriğini yükle (direkt Supabase'den)
     loadPageContent();
     
-    // localStorage değişikliklerini dinle (aynı sekme içinde manuel olarak tetiklenen olaylar için)
+    // Real-time güncellemeler için Supabase subscription kur
+    setupRealtimeSubscription();
+    
+    // localStorage değişikliklerini dinle (fallback için)
     window.addEventListener('storage', handleStorageEvent);
     
-    // Periyodik olarak localStorage'ı kontrol et (her 1 saniyede bir)
-    updateCheckInterval = setInterval(checkForUpdates, 1000);
+    // Periyodik olarak Supabase'den kontrol et (her 5 saniyede bir)
+    updateCheckInterval = setInterval(checkForSupabaseUpdates, 5000);
 });
 
 // Yükleme işlemi bittiğinde yükleniyor animasyonunu kaldır
@@ -44,14 +51,70 @@ window.addEventListener('load', function() {
     }, 500); // 500ms bekle
 });
 
-// Sayfa kapatılırken interval'i temizle
+// Sayfa kapatılırken temizlik yap
 window.addEventListener('beforeunload', function() {
     if (updateCheckInterval) {
         clearInterval(updateCheckInterval);
     }
+    if (supabaseSubscription) {
+        supabaseSubscription.unsubscribe();
+    }
 });
 
-// localStorage değişikliklerini işle
+// Real-time subscription kur
+function setupRealtimeSubscription() {
+    if (!window.supabaseClient) return;
+    
+    try {
+        supabaseSubscription = window.supabaseClient
+            .channel('about_page_changes')
+            .on('postgres_changes', 
+                { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'about_page' 
+                }, 
+                (payload) => {
+                    console.log('Real-time güncelleme alındı:', payload);
+                    if (payload.new) {
+                        updatePageContent(payload.new);
+                        showNotification('Sayfa içeriği güncellendi!');
+                    }
+                }
+            )
+            .subscribe((status) => {
+                console.log('Subscription durumu:', status);
+            });
+    } catch (error) {
+        console.error('Real-time subscription kurulurken hata:', error);
+    }
+}
+
+// Supabase'den periyodik güncelleme kontrolü
+async function checkForSupabaseUpdates() {
+    if (!window.supabaseClient) return;
+    
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('about_page')
+            .select('updated_at')
+            .single();
+            
+        if (error) {
+            console.error('Güncelleme kontrolü hatası:', error);
+            return;
+        }
+        
+        if (data && data.updated_at && (!window.lastUpdateTimestamp || window.lastUpdateTimestamp !== data.updated_at)) {
+            console.log('Yeni güncelleme tespit edildi, sayfa içeriği yenileniyor');
+            loadPageContent();
+        }
+    } catch (error) {
+        console.error('Periyodik güncelleme kontrolü hatası:', error);
+    }
+}
+
+// localStorage değişikliklerini işle (fallback)
 function handleStorageEvent(event) {
     console.log('Storage event yakalandı:', event);
     
@@ -72,7 +135,7 @@ function handleStorageEvent(event) {
     if (key === 'kritik_about_page_data' && newValue) {
         try {
             const data = JSON.parse(newValue);
-            console.log('Hakkımızda sayfası verileri güncellendi:', data);
+            console.log('LocalStorage\'dan hakkımızda sayfası verileri güncellendi:', data);
             updatePageContent(data);
         } catch (error) {
             console.error('Storage event parse hatası:', error);
@@ -94,79 +157,59 @@ function handleStorageEvent(event) {
     }
 }
 
-// LocalStorage'daki değişiklikleri kontrol et
-function checkForUpdates() {
-    try {
-        // Hakkımızda sayfası verisini kontrol et
-        const storedData = localStorage.getItem('kritik_about_page_data');
-        if (storedData) {
-            const data = JSON.parse(storedData);
-            
-            // Eğer data içinde updated_at varsa ve değişmişse güncelle
-            if (data.updated_at && (!window.lastUpdateTimestamp || window.lastUpdateTimestamp !== data.updated_at)) {
-                console.log('LocalStorage\'da değişiklik tespit edildi, içerik güncelleniyor');
-                window.lastUpdateTimestamp = data.updated_at;
-                updatePageContent(data);
-            }
-        }
-    } catch (error) {
-        console.error('Güncelleme kontrolü sırasında hata:', error);
-    }
-}
-
 // Sayfa içeriğini yükle
 async function loadPageContent() {
     try {
-        let data = null;
-        
-        // Önce localStorage'dan kontrol et
-        const storedData = localStorage.getItem('kritik_about_page_data');
-        if (storedData) {
-            try {
-                data = JSON.parse(storedData);
-                console.log('LocalStorage\'dan sayfa içeriği yüklendi:', data);
-                
-                // İçeriği güncelle
-                updatePageContent(data);
-                contentLoaded = true;
-            } catch (error) {
-                console.error('LocalStorage veri parse hatası:', error);
-            }
+        if (!window.supabaseClient) {
+            console.error('Supabase bağlantısı yok, varsayılan içerik yükleniyor');
+            loadDefaultContent();
+            return;
         }
         
-        // Eğer localStorage'da veri yoksa veya parse edilemezse, Supabase'den dene
-        if (!data && window.supabaseClient) {
-            console.log('Supabase\'den veri yükleniyor...');
-            
-            try {
-                const { data: supabaseData, error } = await window.supabaseClient
-                    .from('about_page')
-                    .select('*')
-                    .single();
-            
-                if (error) {
-                    console.error('Supabase veri yükleme hatası:', error);
-                    loadDefaultContent();
-                    return;
-                }
-                
-                if (supabaseData) {
-                    console.log('Supabase\'den veri yüklendi:', supabaseData);
-                    updatePageContent(supabaseData);
+        console.log('Supabase\'den güncel veri yükleniyor...');
+        
+        const { data: supabaseData, error } = await window.supabaseClient
+            .from('about_page')
+            .select('*')
+            .single();
+    
+        if (error) {
+            console.error('Supabase veri yükleme hatası:', error);
+            // LocalStorage fallback dene
+            const storedData = localStorage.getItem('kritik_about_page_data');
+            if (storedData) {
+                try {
+                    const data = JSON.parse(storedData);
+                    console.log('LocalStorage fallback kullanıldı:', data);
+                    updatePageContent(data);
                     contentLoaded = true;
-                    
-                    // LocalStorage'a kaydet
-                    localStorage.setItem('kritik_about_page_data', JSON.stringify(supabaseData));
-                } else {
-                    console.warn('Supabase\'de veri bulunamadı, varsayılan içerik yükleniyor');
-                    loadDefaultContent();
+                    return;
+                } catch (parseError) {
+                    console.error('LocalStorage parse hatası:', parseError);
                 }
-            } catch (supabaseError) {
-                console.error('Supabase bağlantı hatası:', supabaseError);
-                loadDefaultContent();
             }
-        } else if (!data) {
-            console.warn('LocalStorage\'da veri bulunamadı ve Supabase bağlantısı yok, varsayılan içerik yükleniyor');
+            loadDefaultContent();
+            return;
+        }
+        
+        if (supabaseData) {
+            console.log('Supabase\'den güncel veri yüklendi:', supabaseData);
+            
+            // Timestamp'i güncelle
+            window.lastUpdateTimestamp = supabaseData.updated_at;
+            
+            // LocalStorage'a backup olarak kaydet
+            try {
+                localStorage.setItem('kritik_about_page_data', JSON.stringify(supabaseData));
+            } catch (storageError) {
+                console.warn('LocalStorage\'a kayıt yapılamadı:', storageError);
+            }
+            
+            // İçeriği güncelle
+            updatePageContent(supabaseData);
+            contentLoaded = true;
+        } else {
+            console.warn('Supabase\'de veri bulunamadı, varsayılan içerik yükleniyor');
             loadDefaultContent();
         }
     } catch (error) {
@@ -217,15 +260,20 @@ function updatePageContent(data) {
             aboutContent.innerHTML = formattedContent;
         }
         
-        // 3. Vizyon ve Misyon bölümlerini güncelle - null kontrolü ile
-        const visionContent = document.querySelector('.bg-gray-50 .text-gray-700');
-        if (visionContent && data.vision_content) {
-            visionContent.textContent = data.vision_content;
+        // 3. Vizyon ve Misyon bölümlerini güncelle - doğru selector'larla
+        const visionElements = document.querySelectorAll('.bg-gray-50 p-6');
+        if (visionElements.length >= 1 && data.vision_content) {
+            const visionContent = visionElements[0].querySelector('p.text-gray-600');
+            if (visionContent) {
+                visionContent.textContent = data.vision_content;
+            }
         }
         
-        const missionContent = document.querySelector('.bg-primary\\/10 .text-gray-700');
-        if (missionContent && data.mission_content) {
-            missionContent.textContent = data.mission_content;
+        if (visionElements.length >= 2 && data.mission_content) {
+            const missionContent = visionElements[1].querySelector('p.text-gray-600');
+            if (missionContent) {
+                missionContent.textContent = data.mission_content;
+            }
         }
         
         // 4. Timeline öğelerini güncelle - null ve array kontrolü ile
@@ -345,3 +393,49 @@ function smoothScrollToTop() {
         behavior: 'smooth'
     });
 }
+
+// Debug fonksiyonu - console'da çağırılabilir
+window.debugHakkimizda = function() {
+    console.log('=== HAKKIMIZDA DEBUG BİLGİLERİ ===');
+    console.log('Supabase Client:', !!window.supabaseClient);
+    console.log('Content Loaded:', contentLoaded);
+    console.log('Last Update Timestamp:', window.lastUpdateTimestamp);
+    console.log('Subscription Status:', !!supabaseSubscription);
+    
+    // LocalStorage kontrolü
+    const storedData = localStorage.getItem('kritik_about_page_data');
+    if (storedData) {
+        try {
+            const data = JSON.parse(storedData);
+            console.log('LocalStorage Data:', data);
+        } catch (error) {
+            console.log('LocalStorage Parse Error:', error);
+        }
+    } else {
+        console.log('LocalStorage: Veri yok');
+    }
+    
+    // Supabase'den güncel veri çek
+    if (window.supabaseClient) {
+        window.supabaseClient
+            .from('about_page')
+            .select('*')
+            .single()
+            .then(({ data, error }) => {
+                if (error) {
+                    console.log('Supabase Error:', error);
+                } else {
+                    console.log('Supabase Current Data:', data);
+                }
+            });
+    }
+    
+    console.log('=== DEBUG BİTİŞ ===');
+};
+
+// Sayfa yüklendiğinde debug bilgilerini göster
+window.addEventListener('load', function() {
+    setTimeout(() => {
+        console.log('Hakkımızda sayfası yüklendi. Debug için console\'da "debugHakkimizda()" yazın.');
+    }, 1000);
+});
