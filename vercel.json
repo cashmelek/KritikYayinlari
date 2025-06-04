@@ -1,20 +1,5 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "version": 2,
-  "framework": null,
-  "buildCommand": null,
-  "outputDirectory": ".",
-  "builds": [
-    { "src": "**/*.html", "use": "@vercel/static" },
-    { "src": "**/*.css", "use": "@vercel/static" },
-    { "src": "**/*.js", "use": "@vercel/static" },
-    { "src": "images/**", "use": "@vercel/static" }
-  ],
   "rewrites": [
-    { "source": "/", "destination": "/anasayfa.html" },
-    { "source": "/admin", "destination": "/admin/index.html" },
-    { "source": "/admin/:path*", "destination": "/admin/:path*" }
-  ],
-  "cleanUrls": true,
-  "trailingSlash": false
+    { "source": "/", "destination": "/index.html" }
+  ]
 } 

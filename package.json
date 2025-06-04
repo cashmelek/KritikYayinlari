@@ -1,0 +1,13 @@
+{
+  "name": "kritik-yayinlari",
+  "version": "1.0.0",
+  "description": "Kritik Yayınları Web Sitesi",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve .",
+    "build": "echo 'No build step required'"
+  },
+  "keywords": ["static", "html", "css", "javascript"],
+  "author": "Kritik Yayınları",
+  "license": "MIT"
+} 
