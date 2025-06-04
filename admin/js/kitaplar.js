@@ -701,35 +701,83 @@ function showNotification(message, type = 'success') {
 function setupImageUploadValidation() {
     const coverInput = document.getElementById('bookCover');
     const previewImg = document.getElementById('bookCoverPreview');
+    const uploadArea = document.getElementById('imageUploadArea');
+    
+    // Upload area'ya tıklama event'i ekle
+    if (uploadArea && coverInput) {
+        uploadArea.addEventListener('click', function() {
+            coverInput.click();
+        });
+        
+        // Drag & Drop fonksiyonalitesi
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('border-primary', 'bg-primary/5');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary', 'bg-primary/5');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary', 'bg-primary/5');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(files[0]);
+                coverInput.files = dataTransfer.files;
+                
+                // Change event'ini manuel olarak tetikle
+                const changeEvent = new Event('change', { bubbles: true });
+                coverInput.dispatchEvent(changeEvent);
+            }
+        });
+    }
     
     if (coverInput) {
         coverInput.addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
             
-            // Dosya validasyonu
-            const isValid = await validateImageFile(file);
-            if (!isValid) {
-                e.target.value = ''; // Input'u temizle
-                return;
-            }
+            // Loading state göster
+            const spinner = showImageLoadingState(previewImg);
             
-            // Görsel optimizasyonu ve önizleme
-            const optimizedFile = await optimizeImage(file);
-            if (optimizedFile) {
-                // Önizleme göster
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    previewImg.style.opacity = '0';
-                    previewImg.style.animation = 'fadeInImage 0.5s ease-in-out forwards';
-                };
-                reader.readAsDataURL(optimizedFile);
+            try {
+                // Dosya validasyonu
+                const isValid = await validateImageFile(file);
+                if (!isValid) {
+                    e.target.value = ''; // Input'u temizle
+                    hideImageLoadingState(previewImg, spinner);
+                    return;
+                }
                 
-                // Optimized file'ı input'a ata (gerçek upload için)
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(optimizedFile);
-                coverInput.files = dataTransfer.files;
+                // Görsel optimizasyonu ve önizleme
+                const optimizedFile = await optimizeImage(file);
+                if (optimizedFile) {
+                    // Önizleme göster
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        previewImg.style.opacity = '0';
+                        previewImg.style.animation = 'fadeInImage 0.5s ease-in-out forwards';
+                        hideImageLoadingState(previewImg, spinner);
+                    };
+                    reader.readAsDataURL(optimizedFile);
+                    
+                    // Optimized file'ı input'a ata (gerçek upload için)
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(optimizedFile);
+                    coverInput.files = dataTransfer.files;
+                    
+                    showNotification('Görsel başarıyla yüklendi ve optimize edildi!', 'success');
+                }
+            } catch (error) {
+                console.error('Görsel yükleme hatası:', error);
+                showNotification('Görsel yüklenirken bir hata oluştu.', 'error');
+                hideImageLoadingState(previewImg, spinner);
             }
         });
     }
