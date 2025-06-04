@@ -221,7 +221,36 @@ async function loadPageContent() {
 // Varsayılan içeriği yükle
 function loadDefaultContent() {
     console.log('Varsayılan içerik yükleniyor...');
-    // Hiçbir şey yapmayabilir, varsayılan HTML içeriği zaten sayfada
+    
+    // Eğer hiçbir veri yoksa, placeholder'ları göster
+    const aboutContent = document.querySelector('#about-section .prose');
+    if (aboutContent) {
+        aboutContent.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="ri-information-line text-4xl mb-4"></i>
+                <p>İçerik yükleniyor...</p>
+                <p class="text-sm mt-2">Admin panelinden içerik yönetimi yapılabilir.</p>
+            </div>
+        `;
+    }
+    
+    // Vizyon placeholder'ını göster
+    const visionElements = document.querySelectorAll('.bg-gray-50 p-6');
+    if (visionElements.length >= 1) {
+        const visionContent = visionElements[0].querySelector('p.text-gray-600');
+        if (visionContent) {
+            visionContent.innerHTML = '<span class="text-gray-400 italic">Admin panelinden vizyon içeriği eklenecek...</span>';
+        }
+    }
+    
+    // Misyon placeholder'ını göster
+    if (visionElements.length >= 2) {
+        const missionContent = visionElements[1].querySelector('p.text-gray-600');
+        if (missionContent) {
+            missionContent.innerHTML = '<span class="text-gray-400 italic">Admin panelinden misyon içeriği eklenecek...</span>';
+        }
+    }
+    
     contentLoaded = true;
 }
 
@@ -254,7 +283,7 @@ function updatePageContent(data) {
         
         const aboutContent = document.querySelector('#about-section .prose');
         if (aboutContent && data.about_content) {
-            // Paragrafları ayır ve HTML olarak formatla
+            // Placeholder'ı kaldır ve gerçek içeriği ekle
             const paragraphs = data.about_content.split('\n\n').filter(p => p.trim());
             const formattedContent = paragraphs.map(p => `<p class="mb-4">${p.trim()}</p>`).join('');
             aboutContent.innerHTML = formattedContent;
@@ -265,14 +294,14 @@ function updatePageContent(data) {
         if (visionElements.length >= 1 && data.vision_content) {
             const visionContent = visionElements[0].querySelector('p.text-gray-600');
             if (visionContent) {
-                visionContent.textContent = data.vision_content;
+                visionContent.innerHTML = data.vision_content; // Placeholder'ı değiştir
             }
         }
         
         if (visionElements.length >= 2 && data.mission_content) {
             const missionContent = visionElements[1].querySelector('p.text-gray-600');
             if (missionContent) {
-                missionContent.textContent = data.mission_content;
+                missionContent.innerHTML = data.mission_content; // Placeholder'ı değiştir
             }
         }
         
