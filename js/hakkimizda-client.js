@@ -5,6 +5,8 @@
 let contentLoaded = false;
 // Güncelleme kontrolü için interval ID
 let updateCheckInterval = null;
+// Supabase subscription
+let supabaseSubscription = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Yükleniyor animasyonunu göster
@@ -18,17 +20,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Supabase bağlantısını kontrol et
     if (!window.supabaseClient) {
-        console.error('Supabase bağlantısı bulunamadı, LocalStorage kontrolü yapılacak');
+        console.error('Supabase bağlantısı bulunamadı');
+        loadDefaultContent();
+        return;
     }
     
-    // Sayfa içeriğini yükle (önce localStorage'dan, yoksa Supabase'den)
+    // Sayfa içeriğini yükle (direkt Supabase'den)
     loadPageContent();
     
-    // localStorage değişikliklerini dinle (aynı sekme içinde manuel olarak tetiklenen olaylar için)
+    // Real-time güncellemeler için Supabase subscription kur
+    setupRealtimeSubscription();
+    
+    // localStorage değişikliklerini dinle (fallback için)
     window.addEventListener('storage', handleStorageEvent);
     
-    // Periyodik olarak localStorage'ı kontrol et (her 1 saniyede bir)
-    updateCheckInterval = setInterval(checkForUpdates, 1000);
+    // Periyodik olarak Supabase'den kontrol et (her 5 saniyede bir)
+    updateCheckInterval = setInterval(checkForSupabaseUpdates, 5000);
 });
 
 // Yükleme işlemi bittiğinde yükleniyor animasyonunu kaldır
@@ -38,20 +45,76 @@ window.addEventListener('load', function() {
         const pageContent = document.getElementById('pageContent');
         
         if (loadingOverlay && pageContent) {
-                loadingOverlay.classList.add('hidden');
-                pageContent.classList.add('loaded');
+            loadingOverlay.classList.add('hidden');
+            pageContent.classList.add('loaded');
         }
     }, 500); // 500ms bekle
 });
 
-// Sayfa kapatılırken interval'i temizle
+// Sayfa kapatılırken temizlik yap
 window.addEventListener('beforeunload', function() {
     if (updateCheckInterval) {
         clearInterval(updateCheckInterval);
     }
+    if (supabaseSubscription) {
+        supabaseSubscription.unsubscribe();
+    }
 });
 
-// localStorage değişikliklerini işle
+// Real-time subscription kur
+function setupRealtimeSubscription() {
+    if (!window.supabaseClient) return;
+    
+    try {
+        supabaseSubscription = window.supabaseClient
+            .channel('about_page_changes')
+            .on('postgres_changes', 
+                { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'about_page' 
+                }, 
+                (payload) => {
+                    console.log('Real-time güncelleme alındı:', payload);
+                    if (payload.new) {
+                        updatePageContent(payload.new);
+                        showNotification('Sayfa içeriği güncellendi!');
+                    }
+                }
+            )
+            .subscribe((status) => {
+                console.log('Subscription durumu:', status);
+            });
+    } catch (error) {
+        console.error('Real-time subscription kurulurken hata:', error);
+    }
+}
+
+// Supabase'den periyodik güncelleme kontrolü
+async function checkForSupabaseUpdates() {
+    if (!window.supabaseClient) return;
+    
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('about_page')
+            .select('updated_at')
+            .single();
+            
+        if (error) {
+            console.error('Güncelleme kontrolü hatası:', error);
+            return;
+        }
+        
+        if (data && data.updated_at && (!window.lastUpdateTimestamp || window.lastUpdateTimestamp !== data.updated_at)) {
+            console.log('Yeni güncelleme tespit edildi, sayfa içeriği yenileniyor');
+            loadPageContent();
+        }
+    } catch (error) {
+        console.error('Periyodik güncelleme kontrolü hatası:', error);
+    }
+}
+
+// localStorage değişikliklerini işle (fallback)
 function handleStorageEvent(event) {
     console.log('Storage event yakalandı:', event);
     
@@ -72,7 +135,7 @@ function handleStorageEvent(event) {
     if (key === 'kritik_about_page_data' && newValue) {
         try {
             const data = JSON.parse(newValue);
-            console.log('Hakkımızda sayfası verileri güncellendi:', data);
+            console.log('LocalStorage\'dan hakkımızda sayfası verileri güncellendi:', data);
             updatePageContent(data);
         } catch (error) {
             console.error('Storage event parse hatası:', error);
@@ -94,74 +157,59 @@ function handleStorageEvent(event) {
     }
 }
 
-// LocalStorage'daki değişiklikleri kontrol et
-function checkForUpdates() {
-    try {
-        // Hakkımızda sayfası verisini kontrol et
-        const storedData = localStorage.getItem('kritik_about_page_data');
-        if (storedData) {
-            const data = JSON.parse(storedData);
-            
-            // Eğer data içinde updated_at varsa ve değişmişse güncelle
-            if (data.updated_at && (!window.lastUpdateTimestamp || window.lastUpdateTimestamp !== data.updated_at)) {
-                console.log('LocalStorage\'da değişiklik tespit edildi, içerik güncelleniyor');
-                window.lastUpdateTimestamp = data.updated_at;
-                updatePageContent(data);
-            }
-        }
-    } catch (error) {
-        console.error('Güncelleme kontrolü sırasında hata:', error);
-    }
-}
-
 // Sayfa içeriğini yükle
 async function loadPageContent() {
     try {
-        let data = null;
-        
-        // Önce localStorage'dan kontrol et
-        const storedData = localStorage.getItem('kritik_about_page_data');
-        if (storedData) {
-            try {
-                data = JSON.parse(storedData);
-                console.log('LocalStorage\'dan sayfa içeriği yüklendi:', data);
-                
-                // İçeriği güncelle
-                updatePageContent(data);
-                contentLoaded = true;
-            } catch (error) {
-                console.error('LocalStorage veri parse hatası:', error);
-            }
+        if (!window.supabaseClient) {
+            console.error('Supabase bağlantısı yok, varsayılan içerik yükleniyor');
+            loadDefaultContent();
+            return;
         }
         
-        // Eğer localStorage'da veri yoksa veya parse edilemezse, Supabase'den dene
-        if (!data && window.supabaseClient) {
-            console.log('Supabase\'den veri yükleniyor...');
-            
-            const { data: supabaseData, error } = await supabaseClient
+        console.log('Supabase\'den güncel veri yükleniyor...');
+        
+        const { data: supabaseData, error } = await window.supabaseClient
             .from('about_page')
             .select('*')
             .single();
-        
+    
         if (error) {
-                console.error('Supabase veri yükleme hatası:', error);
-                loadDefaultContent();
-                return;
+            console.error('Supabase veri yükleme hatası:', error);
+            // LocalStorage fallback dene
+            const storedData = localStorage.getItem('kritik_about_page_data');
+            if (storedData) {
+                try {
+                    const data = JSON.parse(storedData);
+                    console.log('LocalStorage fallback kullanıldı:', data);
+                    updatePageContent(data);
+                    contentLoaded = true;
+                    return;
+                } catch (parseError) {
+                    console.error('LocalStorage parse hatası:', parseError);
+                }
+            }
+            loadDefaultContent();
+            return;
+        }
+        
+        if (supabaseData) {
+            console.log('Supabase\'den güncel veri yüklendi:', supabaseData);
+            
+            // Timestamp'i güncelle
+            window.lastUpdateTimestamp = supabaseData.updated_at;
+            
+            // LocalStorage'a backup olarak kaydet
+            try {
+                localStorage.setItem('kritik_about_page_data', JSON.stringify(supabaseData));
+            } catch (storageError) {
+                console.warn('LocalStorage\'a kayıt yapılamadı:', storageError);
             }
             
-            if (supabaseData) {
-                console.log('Supabase\'den veri yüklendi:', supabaseData);
-                updatePageContent(supabaseData);
-                contentLoaded = true;
-                
-                // LocalStorage'a kaydet
-                localStorage.setItem('kritik_about_page_data', JSON.stringify(supabaseData));
-            } else {
-                console.warn('Supabase\'de veri bulunamadı, varsayılan içerik yükleniyor');
-                loadDefaultContent();
-            }
-        } else if (!data) {
-            console.warn('LocalStorage\'da veri bulunamadı ve Supabase bağlantısı yok, varsayılan içerik yükleniyor');
+            // İçeriği güncelle
+            updatePageContent(supabaseData);
+            contentLoaded = true;
+        } else {
+            console.warn('Supabase\'de veri bulunamadı, varsayılan içerik yükleniyor');
             loadDefaultContent();
         }
     } catch (error) {
@@ -173,7 +221,36 @@ async function loadPageContent() {
 // Varsayılan içeriği yükle
 function loadDefaultContent() {
     console.log('Varsayılan içerik yükleniyor...');
-    // Hiçbir şey yapmayabilir, varsayılan HTML içeriği zaten sayfada
+    
+    // Eğer hiçbir veri yoksa, placeholder'ları göster
+    const aboutContent = document.querySelector('#about-section .prose');
+    if (aboutContent) {
+        aboutContent.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="ri-information-line text-4xl mb-4"></i>
+                <p>İçerik yükleniyor...</p>
+                <p class="text-sm mt-2">Admin panelinden içerik yönetimi yapılabilir.</p>
+            </div>
+        `;
+    }
+    
+    // Vizyon placeholder'ını göster
+    const visionElements = document.querySelectorAll('.bg-gray-50 p-6');
+    if (visionElements.length >= 1) {
+        const visionContent = visionElements[0].querySelector('p.text-gray-600');
+        if (visionContent) {
+            visionContent.innerHTML = '<span class="text-gray-400 italic">Admin panelinden vizyon içeriği eklenecek...</span>';
+        }
+    }
+    
+    // Misyon placeholder'ını göster
+    if (visionElements.length >= 2) {
+        const missionContent = visionElements[1].querySelector('p.text-gray-600');
+        if (missionContent) {
+            missionContent.innerHTML = '<span class="text-gray-400 italic">Admin panelinden misyon içeriği eklenecek...</span>';
+        }
+    }
+    
     contentLoaded = true;
 }
 
@@ -182,140 +259,135 @@ function updatePageContent(data) {
     try {
         console.log('Sayfa içeriği güncelleniyor:', data);
         
-        // 1. Sayfa başlığı ve alt başlığı
-    const titleElement = document.querySelector('.py-12.bg-gradient-to-r h1.text-3xl');
-        // Hem yeni (page_title) hem de eski (title) formatta veri desteği
+        // 1. Sayfa başlığı ve alt başlığı - null kontrolü ile
+        const titleElement = document.querySelector('.py-12.bg-gradient-to-r h1.text-3xl');
         const title = data.page_title || data.title;
         if (titleElement && title) {
             titleElement.textContent = title;
             document.title = title + ' - Kritik Yayınları';
         }
         
-    const subtitleElement = document.querySelector('.py-12.bg-gradient-to-r p.text-gray-600');
-    if (subtitleElement && data.page_subtitle) {
-        subtitleElement.textContent = data.page_subtitle;
-}
+        const subtitleElement = document.querySelector('.py-12.bg-gradient-to-r p.text-gray-600');
+        if (subtitleElement && data.page_subtitle) {
+            subtitleElement.textContent = data.page_subtitle;
+        }
 
-        // 2. "Biz Kimiz" bölümünü güncelle
-        if (data.about_section_title) {
-    const sectionTitleElement = document.querySelector('#about-section h2.text-2xl');
-            if (sectionTitleElement) {
-        sectionTitleElement.textContent = data.about_section_title;
+        // 2. "Biz Kimiz" bölümünü güncelle - null kontrolü ile
+        const aboutSectionTitle = document.querySelector('#about-section h2');
+        if (aboutSectionTitle && data.about_section_title) {
+            aboutSectionTitle.innerHTML = `
+                ${data.about_section_title}
+                <span class="absolute -bottom-1 left-0 w-full h-1 bg-primary"></span>
+            `;
+        }
+        
+        const aboutContent = document.querySelector('#about-section .prose');
+        if (aboutContent && data.about_content) {
+            // Placeholder'ı kaldır ve gerçek içeriği ekle
+            const paragraphs = data.about_content.split('\n\n').filter(p => p.trim());
+            const formattedContent = paragraphs.map(p => `<p class="mb-4">${p.trim()}</p>`).join('');
+            aboutContent.innerHTML = formattedContent;
+        }
+        
+        // 3. Vizyon ve Misyon bölümlerini güncelle - doğru selector'larla
+        const visionElements = document.querySelectorAll('.bg-gray-50 p-6');
+        if (visionElements.length >= 1 && data.vision_content) {
+            const visionContent = visionElements[0].querySelector('p.text-gray-600');
+            if (visionContent) {
+                visionContent.innerHTML = data.vision_content; // Placeholder'ı değiştir
             }
-    }
-    
-        // İçerik için hem yeni (about_content) hem de eski (content) formatta veri desteği
-        const content = data.about_content || data.content;
-        if (content) {
-        const aboutContentDiv = document.querySelector('#about-section .prose');
-        if (aboutContentDiv) {
-            // İçeriği paragraf etiketlerine bölerek HTML'e ekle
-                const paragraphs = content.split('\n\n');
-            aboutContentDiv.innerHTML = '';
-            
-            paragraphs.forEach((paragraph, index) => {
-                if (paragraph.trim() !== '') {
-                    const p = document.createElement('p');
-                    p.textContent = paragraph;
-                    
-                    // Son paragraf hariç hepsine mb-4 sınıfı ekle
-                    if (index < paragraphs.length - 1) {
-                        p.classList.add('mb-4');
-                    }
-                    
-                    aboutContentDiv.appendChild(p);
-                }
-            });
-    }
-}
-
-        // 3. Vizyon ve Misyon içeriğini güncelle
-        if (data.vision_content) {
-    const visionElement = document.querySelector('#about-section .md\\:grid-cols-2 .bg-gray-50:first-child p.text-gray-600');
-            if (visionElement) {
-        visionElement.textContent = data.vision_content;
+        }
+        
+        if (visionElements.length >= 2 && data.mission_content) {
+            const missionContent = visionElements[1].querySelector('p.text-gray-600');
+            if (missionContent) {
+                missionContent.innerHTML = data.mission_content; // Placeholder'ı değiştir
             }
-    }
-    
-        if (data.mission_content) {
-    const missionElement = document.querySelector('#about-section .md\\:grid-cols-2 .bg-gray-50:last-child p.text-gray-600');
-            if (missionElement) {
-        missionElement.textContent = data.mission_content;
+        }
+        
+        // 4. Timeline öğelerini güncelle - null ve array kontrolü ile
+        if (data.timeline_items && Array.isArray(data.timeline_items) && data.timeline_items.length > 0) {
+            updateTimeline(data.timeline_items);
+        }
+        
+        // 5. Ekip üyelerini güncelle - null ve array kontrolü ile
+        if (data.team_members && Array.isArray(data.team_members) && data.team_members.length > 0) {
+            updateTeamMembers(data.team_members);
+        }
+        
+        console.log('Sayfa içeriği başarıyla güncellendi');
+        
+    } catch (error) {
+        console.error('Sayfa içeriği güncellenirken hata:', error);
     }
 }
 
-        // 4. Zaman çizelgesini güncelle (Kuruluş Hikayemiz)
-        if (data.timeline_items && data.timeline_items.length > 0) {
-    const timelineContainer = document.querySelector('.py-12.bg-gray-50 .relative');
-    
-    if (timelineContainer) {
-        // Mevcut zaman çizelgesi öğelerini temizle
+// Timeline öğelerini güncelle
+function updateTimeline(timelineItems) {
+    try {
+        const timelineContainer = document.querySelector('#timeline-section .space-y-8');
+        if (!timelineContainer) {
+            console.warn('Timeline container bulunamadı');
+            return;
+        }
+        
+        // Mevcut timeline öğelerini temizle
         timelineContainer.innerHTML = '';
         
-        // Yeni zaman çizelgesi öğelerini ekle
-                data.timeline_items.forEach(item => {
+        // Yeni timeline öğelerini ekle
+        timelineItems.forEach((item, index) => {
             const timelineItem = document.createElement('div');
             timelineItem.className = 'timeline-item';
-            
             timelineItem.innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-sm">
-                    <h3 class="text-xl font-semibold text-primary mb-2">${item.title}</h3>
-                    <p class="text-gray-600">${item.content}</p>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold text-secondary mb-3">${item.title || 'Başlık Yok'}</h3>
+                    <p class="text-gray-700">${item.content || 'İçerik yok'}</p>
                 </div>
             `;
-            
             timelineContainer.appendChild(timelineItem);
         });
+        
+        console.log('Timeline güncellendi:', timelineItems.length, 'öğe');
+    } catch (error) {
+        console.error('Timeline güncellenirken hata:', error);
     }
 }
 
-        // 5. Ekip üyelerini güncelle
-        if (data.team_members && data.team_members.length > 0) {
-    const teamContainer = document.querySelector('.py-12.bg-white .grid.grid-cols-1.md\\:grid-cols-3');
-    
-    if (teamContainer) {
+// Ekip üyelerini güncelle
+function updateTeamMembers(teamMembers) {
+    try {
+        const teamContainer = document.querySelector('#team-section .grid');
+        if (!teamContainer) {
+            console.warn('Team container bulunamadı');
+            return;
+        }
+        
         // Mevcut ekip üyelerini temizle
         teamContainer.innerHTML = '';
         
         // Yeni ekip üyelerini ekle
-                data.team_members.forEach(member => {
-                    if (!member.name) return; // Boş üyeleri atla
-                    
-            const teamMember = document.createElement('div');
-            teamMember.className = 'bg-white rounded-lg shadow-md overflow-hidden group hover:shadow-lg transition-shadow';
-                    
-                    const imageUrl = member.image || 'images/placeholder.png';
-            
-            teamMember.innerHTML = `
-                <div class="relative overflow-hidden">
-                            <img src="${imageUrl}" alt="${member.name}" class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105" onerror="this.src='images/placeholder.png'">
+        teamMembers.forEach((member, index) => {
+            const memberCard = document.createElement('div');
+            memberCard.className = 'bg-white p-6 rounded-lg shadow-md text-center';
+            memberCard.innerHTML = `
+                <div class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden bg-gray-200">
+                    ${member.image ? 
+                        `<img src="${member.image}" alt="${member.name || 'Ekip Üyesi'}" class="w-full h-full object-cover">` :
+                        `<div class="w-full h-full flex items-center justify-center text-gray-400">
+                            <i class="ri-user-line text-3xl"></i>
+                        </div>`
+                    }
                 </div>
-                <div class="p-4 text-center">
-                    <h3 class="text-lg font-semibold text-secondary mb-1">${member.name}</h3>
-                            <p class="text-primary text-sm font-medium mb-3">${member.position || ''}</p>
-                            <p class="text-gray-600 text-sm mb-4">${member.description || ''}</p>
-                    <div class="flex justify-center space-x-3">
-                        <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                            <i class="ri-twitter-fill text-lg"></i>
-                        </a>
-                        <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                            <i class="ri-linkedin-fill text-lg"></i>
-                        </a>
-                        <a href="#" class="text-gray-500 hover:text-primary transition-colors">
-                            <i class="ri-mail-fill text-lg"></i>
-                        </a>
-                    </div>
-                </div>
+                <h3 class="text-lg font-bold text-secondary mb-2">${member.name || 'İsim Belirtilmemiş'}</h3>
+                <p class="text-primary font-medium mb-3">${member.position || 'Pozisyon Belirtilmemiş'}</p>
+                <p class="text-gray-600 text-sm">${member.description || 'Açıklama yok'}</p>
             `;
-            
-            teamContainer.appendChild(teamMember);
+            teamContainer.appendChild(memberCard);
         });
-    }
-} 
-
-        console.log('Hakkımızda sayfası içeriği başarıyla güncellendi');
+        
+        console.log('Ekip üyeleri güncellendi:', teamMembers.length, 'üye');
     } catch (error) {
-        console.error('Sayfa içeriği güncellenirken hata:', error);
+        console.error('Ekip üyeleri güncellenirken hata:', error);
     }
 }
 
@@ -350,3 +422,49 @@ function smoothScrollToTop() {
         behavior: 'smooth'
     });
 }
+
+// Debug fonksiyonu - console'da çağırılabilir
+window.debugHakkimizda = function() {
+    console.log('=== HAKKIMIZDA DEBUG BİLGİLERİ ===');
+    console.log('Supabase Client:', !!window.supabaseClient);
+    console.log('Content Loaded:', contentLoaded);
+    console.log('Last Update Timestamp:', window.lastUpdateTimestamp);
+    console.log('Subscription Status:', !!supabaseSubscription);
+    
+    // LocalStorage kontrolü
+    const storedData = localStorage.getItem('kritik_about_page_data');
+    if (storedData) {
+        try {
+            const data = JSON.parse(storedData);
+            console.log('LocalStorage Data:', data);
+        } catch (error) {
+            console.log('LocalStorage Parse Error:', error);
+        }
+    } else {
+        console.log('LocalStorage: Veri yok');
+    }
+    
+    // Supabase'den güncel veri çek
+    if (window.supabaseClient) {
+        window.supabaseClient
+            .from('about_page')
+            .select('*')
+            .single()
+            .then(({ data, error }) => {
+                if (error) {
+                    console.log('Supabase Error:', error);
+                } else {
+                    console.log('Supabase Current Data:', data);
+                }
+            });
+    }
+    
+    console.log('=== DEBUG BİTİŞ ===');
+};
+
+// Sayfa yüklendiğinde debug bilgilerini göster
+window.addEventListener('load', function() {
+    setTimeout(() => {
+        console.log('Hakkımızda sayfası yüklendi. Debug için console\'da "debugHakkimizda()" yazın.');
+    }, 1000);
+});

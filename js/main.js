@@ -1,152 +1,92 @@
-// Yerel veri dosyaları
-const BOOKS_JSON = 'data/books.json';
-const AUTHORS_JSON = 'data/authors.json';
-const BANNERS_JSON = 'data/banners.json';
+// Supabase veri çekme fonksiyonları
+async function fetchBooks() {
+    try {
+        console.log('Kitaplar Supabase\'den yükleniyor...');
+        
+        const { data, error } = await supabaseClient
+            .from('books')
+            .select(`
+                *,
+                authors (
+                    id,
+                    name
+                )
+            `)
+            .order('created_at', { ascending: false });
+            
+        if (error) {
+            console.error('Kitaplar yüklenirken Supabase hatası:', error);
+            throw error;
+        }
+        
+        console.log('Kitaplar başarıyla yüklendi:', data);
+        return data || [];
+    } catch (error) {
+        console.error('Kitaplar yüklenirken hata:', error);
+        // Hata durumunda boş array döndür
+        return [];
+    }
+}
+
+async function fetchAuthors() {
+    try {
+        console.log('Yazarlar Supabase\'den yükleniyor...');
+        
+        const { data, error } = await supabaseClient
+            .from('authors')
+            .select('*')
+            .order('name', { ascending: true });
+            
+        if (error) {
+            console.error('Yazarlar yüklenirken Supabase hatası:', error);
+            throw error;
+        }
+        
+        console.log('Yazarlar başarıyla yüklendi:', data);
+        return data || [];
+    } catch (error) {
+        console.error('Yazarlar yüklenirken hata:', error);
+        // Hata durumunda boş array döndür
+        return [];
+    }
+}
+
+async function fetchBanners() {
+    try {
+        console.log('Banner\'lar Supabase\'den yükleniyor...');
+        
+        const { data, error } = await supabaseClient
+            .from('banners')
+            .select('*')
+            .eq('is_active', true)
+            .order('order_number', { ascending: true });
+            
+        if (error) {
+            console.error('Banner\'lar yüklenirken Supabase hatası:', error);
+            throw error;
+        }
+        
+        console.log('Banner\'lar başarıyla yüklendi:', data);
+        return data || [];
+    } catch (error) {
+        console.error('Banner\'lar yüklenirken hata:', error);
+        // Hata durumunda boş array döndür
+        return [];
+    }
+}
 
 // DOM Elementleri
 const mobileMenuBtn = document.querySelector('.mobile-menu');
 const navMenu = document.querySelector('nav ul');
 const bookGrid = document.querySelector('.book-grid');
 const authorGrid = document.querySelector('.author-grid');
-const bannerSlider = document.getElementById('banner-slider');
+const bannerSlider = document.getElementById('banner-container');
 
 // Mobil menü açıp kapatma
 if (mobileMenuBtn && navMenu) {
     mobileMenuBtn.addEventListener('click', () => {
         navMenu.classList.toggle('show');
     });
-}
-
-// Veri yükleme fonksiyonları
-async function fetchBooks() {
-    try {
-        const response = await fetch(BOOKS_JSON);
-        if (!response.ok) throw new Error('Kitaplar yüklenirken bir hata oluştu');
-        return await response.json();
-    } catch (error) {
-        console.error('Kitaplar yüklenirken hata:', error);
-        // Yerel örnek veri
-        return [
-            {
-                id: 1,
-                title: 'Beyoğlu Rapsodisi',
-                author: 'Ahmet Ümit',
-                authorId: 1,
-                cover: 'images/Book/2kitap.png',
-                description: 'İstanbul\'un kalbinin attığı Beyoğlu\'nda geçen sürükleyici bir polisiye. Başkomser Nevzat\'ın çözdüğü gizemli bir cinayet vakasını konu alır.',
-                price: '45,90 ₺',
-                originalPrice: '55,90 ₺',
-                discount: 18,
-                category: 'Polisiye',
-                year: 2003,
-                pages: 480,
-                publisher: 'Kritik Yayınları',
-                language: 'Türkçe',
-                isbn: '9789752895584',
-                rating: 4.5,
-                reviewCount: 124,
-                isNew: true,
-                isBestseller: true,
-                stock: 150,
-                excerpt: 'Komiser Nevzat, bu kez de Beyoğlu\'nun arka sokaklarında işlenen gizemli bir cinayetin peşine düşüyor...'
-            },
-            {
-                id: 2,
-                title: 'İstanbul Hatırası',
-                author: 'Ahmet Ümit',
-                authorId: 1,
-                cover: 'images/Book/deneme.jpg',
-                description: 'İstanbul\'un tarihi mekanlarında geçen, gizem dolu bir cinayet romanı.',
-                price: '42,50 ₺',
-                originalPrice: '52,50 ₺',
-                discount: 19,
-                category: 'Polisiye',
-                year: 2010,
-                pages: 520,
-                publisher: 'Kritik Yayınları',
-                language: 'Türkçe',
-                isbn: '9789752895589',
-                rating: 4.2,
-                reviewCount: 89,
-                isNew: false,
-                isBestseller: true,
-                stock: 75,
-                excerpt: 'İstanbul\'un tarihi yarımadasında bulunan bir el yazması, arkeologlar ve tarihçiler arasında büyük heyecan yaratır...'
-            },
-            {
-                id: 3,
-                title: 'Kırlangıç Çığlığı',
-                author: 'Ahmet Ümit',
-                authorId: 1,
-                cover: 'images/Book/7df216066bcdeff25d31cd93ca46c1d6.jpg',
-                description: 'Sıradışı bir cinayetin peşinde polisiyenin sınırlarını zorlayan bir roman.',
-                price: '48,90 ₺',
-                originalPrice: '58,90 ₺',
-                discount: 17,
-                category: 'Polisiye',
-                year: 2023,
-                pages: 512,
-                publisher: 'Kritik Yayınları',
-                language: 'Türkçe',
-                isbn: '9789752123463',
-                rating: 4.7,
-                reviewCount: 156,
-                isNew: true,
-                isBestseller: true,
-                stock: 200,
-                excerpt: 'Bir kırlangıç sürüsünün gökyüzünde çizdiği şekiller, eski bir efsanenin izlerini taşımaktadır...'
-            }
-        ];
-    }
-}
-
-async function fetchAuthors() {
-    try {
-        const response = await fetch(AUTHORS_JSON);
-        if (!response.ok) throw new Error('Yazarlar yüklenirken bir hata oluştu');
-        const data = await response.json();
-        return data.authors || [];
-    } catch (error) {
-        console.error('Yazarlar yüklenirken hata:', error);
-        // Yerel örnek veri
-        return [
-            {
-                id: 1,
-                name: 'Ahmet Ümit',
-                bio: '1960 yılında Gaziantep\'te doğdu. 22 yıldır yazarlık yapmaktadır. Polisiye ve tarihi roman türlerinde eserler vermektedir.',
-                image: 'https://i.pravatar.cc/150?img=1',
-                books: [1, 2, 3]
-            },
-            {
-                id: 2,
-                name: 'Elif Şafak',
-                bio: '1971 yılında Strazburg\'ta doğdu. Romanları kırktan fazla dile çevrilmiştir. Eserlerinde Doğu-Batı çatışması, kimlik, göç gibi temaları işler.',
-                image: 'https://i.pravatar.cc/150?img=2',
-                books: [7, 9]
-            },
-            {
-                id: 3,
-                name: 'Orhan Pamuk',
-                bio: '1952 yılında İstanbul\'da doğdu. 2006 yılında Nobel Edebiyat Ödülü\'nü kazandı. Eserlerinde İstanbul\'un farklı yüzlerini yansıtır.',
-                image: 'https://i.pravatar.cc/150?img=3',
-                books: [5, 6]
-            },
-            {
-                id: 4,
-                name: 'Sabahattin Ali',
-                bio: '1907 yılında Gümülcine\'de doğdu. Türk edebiyatının en önemli yazarlarından biridir. Eserlerinde toplumsal gerçekçiliği işlemiştir.',
-                image: 'https://i.pravatar.cc/150?img=4',
-                books: [4, 8]
-            },
-            {
-                id: 5,
-                name: 'Zülfü Livaneli',
-                bio: '1946 yılında Konya\'da doğdu. Müzisyen, yazar ve yönetmen kimliğiyle tanınır. Eserlerinde Anadolu insanının yaşamını konu alır.',
-                image: 'https://i.pravatar.cc/150?img=5',
-                books: [10]
-            }
-        ];
-    }
 }
 
 // Kitapları yükle
@@ -165,14 +105,23 @@ async function loadBooks() {
         
         bookGrid.innerHTML = books.map(book => `
             <div class="book-card" data-book-id="${book.id}">
-                <img src="${book.image}" alt="${book.title}" loading="lazy">
+                <div class="book-cover">
+                    <img src="${book.cover_url || 'images/placeholder-book.jpg'}" 
+                         alt="${book.title}" 
+                         loading="lazy"
+                         onerror="this.src='images/placeholder-book.jpg'; this.onerror=null;"
+                         onload="this.style.opacity='1'; this.style.animation='fadeInImage 0.5s ease-in-out forwards';">
+                </div>
                 <div class="book-info">
                     <h3>${book.title}</h3>
-                    <p class="author">${book.author}</p>
+                    <p class="author">${book.authors ? book.authors.name : 'Bilinmeyen Yazar'}</p>
                     <button class="btn view-details" data-book-id="${book.id}">İncele</button>
                 </div>
             </div>
         `).join('');
+        
+        // Görsel yükleme optimizasyonlarını uygula
+        optimizeBookImages();
         
         // Detay butonlarına tıklama olayı ekle
         document.querySelectorAll('.view-details').forEach(button => {
@@ -202,9 +151,9 @@ async function loadAuthors() {
         
         authorGrid.innerHTML = authors.map(author => `
             <div class="author-card" data-author-id="${author.id}">
-                <img src="${author.image}" alt="${author.name}" loading="lazy">
+                <img src="${author.photo_url || 'https://i.pravatar.cc/150?img=' + author.id}" alt="${author.name}" loading="lazy">
                 <h3>${author.name}</h3>
-                <p class="bio">${author.bio.substring(0, 150)}...</p>
+                <p class="bio">${(author.bio || '').substring(0, 150)}...</p>
                 <button class="btn view-author" data-author-id="${author.id}">Kitapları Gör</button>
             </div>
         `).join('');
@@ -218,6 +167,85 @@ async function loadAuthors() {
         });
     } catch (error) {
         authorGrid.innerHTML = `<div class="error">Yazarlar yüklenirken bir hata oluştu: ${error.message}</div>`;
+    }
+}
+
+// Banner yükleme fonksiyonu
+async function loadBanners() {
+    if (!bannerSlider) return;
+    
+    try {
+        console.log('Banner\'lar yükleniyor...');
+        const banners = await fetchBanners();
+        
+        if (!banners || banners.length === 0) {
+            console.warn('Banner verileri bulunamadı, varsayılan banner gösteriliyor.');
+            bannerSlider.innerHTML = `
+                <div class="w-full h-full bg-gradient-to-r from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold text-secondary mb-4">Kritik Yayınları</h2>
+                        <p class="text-gray-600 text-lg">Edebiyatın seçkin eserleri</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Banner slider HTML'ini oluştur
+        bannerSlider.innerHTML = `
+            <div class="banner-slider w-full h-full relative overflow-hidden">
+                ${banners.map((banner, index) => `
+                    <div class="slide ${index === 0 ? 'active' : ''} absolute inset-0 transition-opacity duration-500 ${index === 0 ? 'opacity-100' : 'opacity-0'}">
+                        <div class="slide-bg w-full h-full relative">
+                            <img src="${banner.image_url}" alt="${banner.title}" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+                        </div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="text-center text-white px-4">
+                                <h2 class="text-3xl md:text-4xl font-bold mb-4">${banner.title}</h2>
+                                ${banner.subtitle ? `<p class="text-xl mb-4">${banner.subtitle}</p>` : ''}
+                                ${banner.description ? `<p class="text-lg mb-6 max-w-2xl">${banner.description}</p>` : ''}
+                                ${banner.link ? `<a href="${banner.link}" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium transition-colors">Detaylar</a>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+                
+                ${banners.length > 1 ? `
+                    <!-- Navigation Arrows -->
+                    <button class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors" onclick="previousSlide()">
+                        <i class="ri-arrow-left-line text-xl"></i>
+                    </button>
+                    <button class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors" onclick="nextSlide()">
+                        <i class="ri-arrow-right-line text-xl"></i>
+                    </button>
+                    
+                    <!-- Dots Indicator -->
+                    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                        ${banners.map((_, index) => `
+                            <button class="w-3 h-3 rounded-full transition-colors ${index === 0 ? 'bg-white' : 'bg-white/50'}" onclick="goToSlide(${index})"></button>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Slider fonksiyonlarını başlat
+        if (banners.length > 1) {
+            setupBannerSlider(banners.length);
+        }
+        
+        console.log('Banner\'lar başarıyla yüklendi ve gösterildi');
+    } catch (error) {
+        console.error('Banner\'lar yüklenirken hata:', error);
+        bannerSlider.innerHTML = `
+            <div class="w-full h-full bg-red-50 flex items-center justify-center">
+                <div class="text-center text-red-600">
+                    <i class="ri-error-warning-line text-4xl mb-4"></i>
+                    <p>Banner\'lar yüklenirken bir hata oluştu</p>
+                </div>
+            </div>
+        `;
     }
 }
 
@@ -235,373 +263,17 @@ function showAuthorBooks(authorId) {
     alert(`Yazar ID: ${authorId} kitapları listelenecek`);
 }
 
-// Ana Slider İşlevleri
-function initMainSlider() {
-    const slider = document.querySelector('.slider');
-    if (!slider) return;
-    
-    const slides = document.querySelectorAll('.slider .slide');
-    const indicators = document.querySelectorAll('.slider .indicator');
-    const prevBtn = document.querySelector('.slider .slider-nav.prev');
-    const nextBtn = document.querySelector('.slider .slider-nav.next');
-    let currentSlide = 0;
-    let slideInterval;
-
-    // Slider'ı başlat
-    function startSlider() {
-        slideInterval = setInterval(nextSlide, 5000);
-    }
-
-    // Sonraki slayta geç
-    function nextSlide() {
-        goToSlide((currentSlide + 1) % slides.length);
-    }
-
-    // Önceki slayta geç
-    function prevSlide() {
-        goToSlide((currentSlide - 1 + slides.length) % slides.length);
-    }
-
-    // Belirli bir slayta git
-    function goToSlide(n) {
-        slides[currentSlide].classList.remove('active');
-        indicators[currentSlide].classList.remove('active');
-        currentSlide = n;
-        slides[currentSlide].classList.add('active');
-        indicators[currentSlide].classList.add('active');
-    }
-
-    // Olay dinleyicilerini ekle
-    if (prevBtn && nextBtn) {
-        prevBtn.addEventListener('click', () => {
-            clearInterval(slideInterval);
-            prevSlide();
-            startSlider();
-        });
-
-        nextBtn.addEventListener('click', () => {
-            clearInterval(slideInterval);
-            nextSlide();
-            startSlider();
-        });
-    }
-
-    // İndikatörlere tıklama olayını ekle
-    indicators.forEach((indicator, index) => {
-        indicator.addEventListener('click', () => {
-            clearInterval(slideInterval);
-            goToSlide(index);
-            startSlider();
-        });
-    });
-
-    // Fare slaytın üzerine geldiğinde otomatik geçişi durdur
-    slider.addEventListener('mouseenter', () => {
-        clearInterval(slideInterval);
-    });
-
-    slider.addEventListener('mouseleave', () => {
-        startSlider();
-    });
-
-    // Slider'ı başlat
-    startSlider();
-}
-
-// Kart Slider'ı için genel fonksiyon
-function initCardSlider(containerClass, prevBtnClass, nextBtnClass, indicatorsClass, cardsPerView = 4) {
-    const container = document.querySelector(`.${containerClass}`);
-    if (!container) return;
-
-    const wrapper = container.querySelector('.slider-wrapper');
-    const prevBtn = container.querySelector(`.${prevBtnClass}`);
-    const nextBtn = container.querySelector(`.${nextBtnClass}`);
-    const indicators = container.querySelectorAll(`.${indicatorsClass} .indicator`);
-    
-    const cards = wrapper.children;
-    const totalCards = cards.length;
-    let currentIndex = 0;
-    let slideInterval;
-
-    // Slider'ı başlat
-    function startSlider() {
-        if (totalCards <= cardsPerView) return; // Eğer görüntülenecek kadar kart yoksa başlatma
-        slideInterval = setInterval(nextSlide, 5000);
-    }
-
-    // Sonraki slayta geç
-    function nextSlide() {
-        if (currentIndex < totalCards - cardsPerView) {
-            currentIndex++;
-            updateSlider();
-        } else {
-            // Son slayta ulaşıldıysa başa dön
-            currentIndex = 0;
-            updateSlider();
-        }
-    }
-
-    // Önceki slayta geç
-    function prevSlide() {
-        if (currentIndex > 0) {
-            currentIndex--;
-            updateSlider();
-        } else {
-            // İlk slayttaysa sona git
-            currentIndex = Math.max(0, totalCards - cardsPerView);
-            updateSlider();
-        }
-    }
-
-    // Belirli bir slayta git
-    function goToSlide(index) {
-        currentIndex = index;
-        updateSlider();
-    }
-
-    // Slider'ı güncelle
-    function updateSlider() {
-        const cardWidth = cards[0].offsetWidth + 20; // Kart genişliği + gap
-        wrapper.style.transform = `translateX(-${currentIndex * cardWidth}px)`;
-        
-        // İndikatörleri güncelle
-        updateIndicators();
-    }
-
-    // İndikatörleri güncelle
-    function updateIndicators() {
-        const totalSlides = Math.ceil(totalCards / cardsPerView);
-        const currentSlide = Math.floor(currentIndex / cardsPerView);
-        
-        indicators.forEach((indicator, index) => {
-            if (index < totalSlides) {
-                indicator.style.display = 'block';
-                if (index === currentSlide) {
-                    indicator.classList.add('active');
-                } else {
-                    indicator.classList.remove('active');
-                }
-            } else {
-                indicator.style.display = 'none';
-            }
-        });
-    }
-
-    // Olay dinleyicilerini ekle
-    if (prevBtn && nextBtn) {
-        prevBtn.addEventListener('click', () => {
-            clearInterval(slideInterval);
-            prevSlide();
-            startSlider();
-        });
-
-        nextBtn.addEventListener('click', () => {
-            clearInterval(slideInterval);
-            nextSlide();
-            startSlider();
-        });
-    }
-
-    // İndikatörlere tıklama olayını ekle
-    indicators.forEach((indicator, index) => {
-        indicator.addEventListener('click', () => {
-            clearInterval(slideInterval);
-            goToSlide(index * cardsPerView);
-            startSlider();
-        });
-    });
-
-    // Slider'ı başlat
-    startSlider();
-    
-    // Pencere boyutu değiştiğinde slider'ı güncelle
-    window.addEventListener('resize', () => {
-        updateSlider();
-    });
-}
-
-// Kitapları yükle ve grid olarak göster
-async function loadBooksAndInitSlider() {
-    const books = await fetchBooks();
-    const booksGrid = document.querySelector('.books-grid');
-    
-    if (!booksGrid) return;
-    
-    if (books && books.length > 0) {
-        booksGrid.innerHTML = books.map(book => `
-            <div class="book-card">
-                <img src="${book.image || 'images/placeholder-book.jpg'}" 
-                     alt="${book.title}" 
-                     loading="lazy"
-                     onerror="this.src='images/placeholder-book.jpg'">
-                <div class="book-info">
-                    <h3>${book.title}</h3>
-                    <p class="author">${book.author || 'Yazar Bilgisi Yok'}</p>
-                    <button class="btn" data-book-id="${book.id}">İncele</button>
-                </div>
-            </div>
-        `).join('');
-        
-        // Kitap detay butonlarına tıklama olayı ekle
-        document.querySelectorAll('.book-card .btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const bookId = e.target.getAttribute('data-book-id');
-                showBookDetails(bookId);
-            });
-        });
-    } else {
-        booksGrid.innerHTML = '<p class="no-books">Henüz kitap bulunmamaktadır.</p>';
-    }
-}
-
-// Yazarları yükle ve slider'ı başlat
-async function loadAuthorsAndInitSlider() {
-    const authors = await fetchAuthors();
-    if (authors && authors.length > 0) {
-        const authorGrid = document.querySelector('.author-slider .slider-wrapper');
-        if (authorGrid) {
-            authorGrid.innerHTML = authors.map(author => `
-                <div class="author-card">
-                    <img src="${author.image}" alt="${author.name}" loading="lazy">
-                    <h3>${author.name}</h3>
-                    <p class="bio">${author.bio}</p>
-                    <button class="btn" data-author-id="${author.id}">Kitapları Gör</button>
-                </div>
-            `).join('');
-            
-            // Yazar detay butonlarına tıklama olayı ekle
-            document.querySelectorAll('.author-card .btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const authorId = e.target.getAttribute('data-author-id');
-                    showAuthorBooks(authorId);
-                });
-            });
-            
-            // Yazar slider'ını başlat
-            initCardSlider('author-slider', 'author-prev', 'author-next', 'author-indicators');
-        }
-    }
-}
-
-// Kitapları yükleme işlemi
-async function loadBooks() {
-    try {
-        const response = await fetch('data/books.json');
-        if (!response.ok) {
-            throw new Error('Kitaplar yüklenirken bir hata oluştu');
-        }
-        const data = await response.json();
-        // Eğer dizi içinde dizi varsa, ilk diziyi döndür
-        return Array.isArray(data[0]) ? data[0] : data;
-    } catch (error) {
-        console.error('Kitaplar yüklenirken hata:', error);
-        return [];
-    }
-}
-
-// Kitap kartı oluşturma
-function createBookCard(book) {
-    if (!book) return '';
-    
-    return `
-        <div class="book-card" data-id="${book.id}">
-            <div class="book-cover">
-                <img src="${book.cover}" alt="${book.title}" loading="lazy">
-                <a href="kitap-detay.html?id=${book.id}" class="book-overlay">
-                    <span>Detaylı Bilgi</span>
-                </a>
-            </div>
-            <div class="book-details">
-                <h3 class="book-title">${book.title || 'İsimsiz Kitap'}</h3>
-                <p class="book-author">${book.author || 'Bilinmeyen Yazar'}</p>
-                ${book.excerpt ? `<p class="book-excerpt">${book.excerpt}</p>` : ''}
-                <div class="book-meta">
-                <a href="kitap-detay.html?id=${book.id}" class="btn btn-block">İncele</a>
-            </div>
-        </div>
-    `;
-}
-
-// Kitapları yükle ve göster
-async function loadAndDisplayBooks(containerId, filterFn) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    try {
-        // Yükleniyor durumunu göster
-        container.innerHTML = `
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Kitaplar yükleniyor...</p>
-            </div>`;
-        
-        const books = await loadBooks();
-        if (!books || books.length === 0) {
-            throw new Error('Hiç kitap bulunamadı');
-        }
-        
-        const filteredBooks = filterFn ? books.filter(filterFn) : books;
-        
-        if (filteredBooks.length === 0) {
-            container.innerHTML = `
-                <div class="no-books">
-                    <i class="fas fa-book-open"></i>
-                    <p>Gösterilecek kitap bulunamadı</p>
-                </div>`;
-            return;
-        }
-        
-        // Kitapları ekrana ekle
-        container.innerHTML = '';
-        filteredBooks.slice(0, 8).forEach(book => {
-            container.insertAdjacentHTML('beforeend', createBookCard(book));
-        });
-        
-        // Slider'ı başlat (eğer slider ise)
-        if (container.classList.contains('book-slider')) {
-            initBookSlider(container);
-        }
-    } catch (error) {
-        console.error('Kitaplar yüklenirken hata:', error);
-        container.innerHTML = `
-            <div class="error-message">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Kitaplar yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.</p>
-                <button class="btn btn-retry" onclick="window.location.reload()">
-                    <i class="fas fa-sync-alt"></i> Tekrar Dene
-                </button>
-            </div>`;
-    }
-}
-
-// Slider başlatma
-function initBookSlider(container) {
-    if (typeof tns !== 'undefined') {
-        tns({
-            container: container,
-            items: 1,
-            slideBy: 1,
-            autoplay: false,
-            controls: false,
-            nav: false,
-            responsive: {
-                576: { items: 2 },
-                768: { items: 3 },
-                992: { items: 4 },
-                1200: { items: 5 }
-            }
-        });
-    }
-}
-
 // Sayfa yüklendiğinde çalışacak kodlar
 document.addEventListener('DOMContentLoaded', function() {
-    // Ana slider'ı başlat
-    initSlider();
+    // Banner sistemini yükle
+    loadBanners();
     
-    // Kitapları yükle
-    loadAndDisplayBooks('newBooksGrid', book => book.isNew);
-    loadAndDisplayBooks('bestsellersGrid', book => book.isBestseller);
+    // Kitapları ve yazarları yükle
+    loadBooks();
+    loadAuthors();
+    
+    // Slider için otomatik geçiş ayarla
+    setupSlider();
     
     // Mobil menü butonuna tıklama olayı ekle
     const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
@@ -617,43 +289,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Alt menüleri açıp kapatmak için
-    const menuItems = document.querySelectorAll('.main-nav > ul > li > a');
-    menuItems.forEach(item => {
-        const parentLi = item.parentElement;
-        if (parentLi.querySelector('.sub-menu')) {
-            item.addEventListener('click', function(e) {
-                if (window.innerWidth <= 992) {
-                    e.preventDefault();
-                    const subMenu = this.nextElementSibling;
-                    if (subMenu && subMenu.classList.contains('sub-menu')) {
-                        subMenu.classList.toggle('active');
-                    }
-                }
-            });
-        }
-    });
-    
-    // Mobil arama butonu
-    const mobileSearchToggle = document.querySelector('.mobile-search-toggle');
-    const headerSearch = document.querySelector('.header-search');
-    
-    if (mobileSearchToggle && headerSearch) {
-        mobileSearchToggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            headerSearch.classList.toggle('active');
-            
-            // Arama kutusuna odaklan
-            if (headerSearch.classList.contains('active')) {
-                const searchInput = headerSearch.querySelector('input[type="text"]');
-                if (searchInput) {
-                    searchInput.focus();
-                }
-            }
-        });
-    }
-    
     // Dışarı tıklandığında menüyü kapat
     document.addEventListener('click', function(e) {
         // Mobil menüyü kapat
@@ -663,14 +298,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (mobileMenu && nav) {
                 mobileMenu.classList.remove('active');
                 nav.classList.remove('active');
-                });
                 
                 // Mobil menüyü kapat
                 if (navMenu) {
                     navMenu.classList.remove('show');
                 }
             }
-        });
+        }
     });
     
     // Sayfa kaydırıldığında header'ı şeffaflaştır
@@ -699,77 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-// Görseller yüklendikten sonra çalışacak kod
-document.addEventListener('DOMContentLoaded', function() {
-    // Banner sistemini yükle
-    loadBanners();
-    
-    // Slider için otomatik geçiş ayarla
-    setupSlider();
-    
-    window.addEventListener('load', function() {
-        // Görsellerin yumuşak yüklenmesi
-        const images = document.querySelectorAll('img');
-        images.forEach(img => {
-            if (img.complete) {
-                img.style.opacity = 1;
-            } else {
-                img.style.opacity = 0;
-                img.style.transition = 'opacity 0.5s ease';
-                img.addEventListener('load', function() {
-                    this.style.opacity = 1;
-                });
-            }
-        });
-    });
-});
-
-// Banner yükleme fonksiyonu
-async function loadBanners() {
-    if (!bannerSlider) return;
-    
-    try {
-        // Admin panelinden eklenen banner'ları JSON dosyasından yükle
-        const response = await fetch(BANNERS_JSON);
-        if (!response.ok) {
-            console.warn('Banner verileri yüklenemedi, varsayılan banner\'lar kullanılıyor.');
-            return; // Varsayılan banner'lar zaten HTML'de var
-        }
-        
-        const banners = await response.json();
-        if (!banners || banners.length === 0) return;
-        
-        // Aktif banner'ları filtrele
-        const activeBanners = banners.filter(banner => banner.status === 'active');
-        if (activeBanners.length === 0) return;
-        
-        // Banner'ları sırala (pozisyona göre)
-        activeBanners.sort((a, b) => a.position - b.position);
-        
-        // HTML oluştur
-        bannerSlider.innerHTML = activeBanners.map((banner, index) => `
-            <div class="slide ${index === 0 ? 'active' : ''}">
-                <div class="slide-bg">
-                    <img src="${banner.imagePath}" alt="${banner.title}">
-                </div>
-                <div class="container">
-                    <div class="slide-content">
-                        <h2>${banner.title}</h2>
-                        <p>${banner.description || ''}}</p>
-                        ${banner.link ? `<a href="${banner.link}" class="btn btn-primary">Detaylar</a>` : ''}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        
-        // Slider nokta göstergelerini güncelle
-        updateSliderDots();
-        
-    } catch (error) {
-        console.error('Banner yüklenirken hata oluştu:', error);
-    }
-}
 
 // Slider ayarları
 function setupSlider() {
@@ -880,4 +443,212 @@ function updateSliderDots() {
         
         dotsContainer.appendChild(dot);
     });
+}
+
+// Kitap görsellerini optimize et
+function optimizeBookImages() {
+    const bookImages = document.querySelectorAll('.book-card img');
+    
+    bookImages.forEach((img, index) => {
+        // Lazy loading için Intersection Observer kullan
+        if ('IntersectionObserver' in window) {
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const image = entry.target;
+                        
+                        // Görsel yükleme başladığında placeholder göster
+                        if (!image.complete) {
+                            showImagePlaceholder(image);
+                        }
+                        
+                        // Görsel yüklendiğinde optimizasyonları uygula
+                        image.addEventListener('load', function() {
+                            hideImagePlaceholder(this);
+                            applyImageOptimizations(this);
+                        });
+                        
+                        // Hata durumunda placeholder göster
+                        image.addEventListener('error', function() {
+                            hideImagePlaceholder(this);
+                            this.src = 'images/placeholder-book.jpg';
+                        });
+                        
+                        observer.unobserve(image);
+                    }
+                });
+            }, {
+                rootMargin: '50px 0px',
+                threshold: 0.1
+            });
+            
+            imageObserver.observe(img);
+        }
+        
+        // Progressive loading için küçük bir gecikme ekle
+        setTimeout(() => {
+            if (img.src && !img.complete) {
+                showImagePlaceholder(img);
+            }
+        }, index * 100); // Her görsel için 100ms gecikme
+    });
+}
+
+// Görsel placeholder göster
+function showImagePlaceholder(img) {
+    const bookCover = img.closest('.book-cover');
+    if (!bookCover) return;
+    
+    // Placeholder zaten varsa çık
+    if (bookCover.querySelector('.image-placeholder')) return;
+    
+    const placeholder = document.createElement('div');
+    placeholder.className = 'image-placeholder';
+    placeholder.innerHTML = `
+        <div class="placeholder-content">
+            <i class="ri-image-line"></i>
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+    
+    bookCover.appendChild(placeholder);
+    img.style.opacity = '0';
+}
+
+// Görsel placeholder gizle
+function hideImagePlaceholder(img) {
+    const bookCover = img.closest('.book-cover');
+    if (!bookCover) return;
+    
+    const placeholder = bookCover.querySelector('.image-placeholder');
+    if (placeholder) {
+        placeholder.style.opacity = '0';
+        setTimeout(() => {
+            if (placeholder.parentElement) {
+                placeholder.parentElement.removeChild(placeholder);
+            }
+        }, 300);
+    }
+    
+    img.style.opacity = '1';
+}
+
+// Görsel optimizasyonlarını uygula
+function applyImageOptimizations(img) {
+    // Görsel boyutlarını kontrol et ve optimize et
+    if (img.naturalWidth && img.naturalHeight) {
+        const aspectRatio = img.naturalWidth / img.naturalHeight;
+        const idealRatio = 3 / 4; // Kitap kapağı oranı
+        
+        // Oran uygun değilse object-position ayarla
+        if (Math.abs(aspectRatio - idealRatio) > 0.1) {
+            img.style.objectPosition = 'center top';
+        }
+        
+        // Çok büyük görseller için uyarı (geliştirme aşamasında)
+        if (img.naturalWidth > 1000 || img.naturalHeight > 1500) {
+            console.warn(`Büyük görsel tespit edildi: ${img.src} (${img.naturalWidth}x${img.naturalHeight})`);
+        }
+    }
+    
+    // Görsel kalitesi filtreleri uygula
+    img.style.filter = 'contrast(1.05) saturate(1.05)';
+    
+    // Hover efekti için hazırla
+    img.addEventListener('mouseenter', function() {
+        this.style.filter = 'contrast(1.1) saturate(1.1)';
+    });
+    
+    img.addEventListener('mouseleave', function() {
+        this.style.filter = 'contrast(1.05) saturate(1.05)';
+    });
+}
+
+// Banner slider fonksiyonları
+let currentSlide = 0;
+let totalSlides = 0;
+let slideInterval;
+
+function setupBannerSlider(slideCount) {
+    totalSlides = slideCount;
+    currentSlide = 0;
+    
+    // Otomatik geçiş başlat
+    startAutoSlide();
+}
+
+function goToSlide(index) {
+    if (index < 0 || index >= totalSlides) return;
+    
+    // Mevcut slide'ı gizle
+    const currentSlideElement = document.querySelector('.slide.active');
+    if (currentSlideElement) {
+        currentSlideElement.classList.remove('opacity-100');
+        currentSlideElement.classList.add('opacity-0');
+        currentSlideElement.classList.remove('active');
+    }
+    
+    // Yeni slide'ı göster
+    const slides = document.querySelectorAll('.slide');
+    if (slides[index]) {
+        slides[index].classList.add('active');
+        slides[index].classList.remove('opacity-0');
+        slides[index].classList.add('opacity-100');
+    }
+    
+    // Dots'ları güncelle
+    updateDots(index);
+    
+    currentSlide = index;
+}
+
+function nextSlide() {
+    const nextIndex = (currentSlide + 1) % totalSlides;
+    goToSlide(nextIndex);
+}
+
+function previousSlide() {
+    const prevIndex = (currentSlide - 1 + totalSlides) % totalSlides;
+    goToSlide(prevIndex);
+}
+
+function updateDots(activeIndex) {
+    const dots = document.querySelectorAll('.banner-slider button[onclick*="goToSlide"]');
+    dots.forEach((dot, index) => {
+        if (index === activeIndex) {
+            dot.classList.remove('bg-white/50');
+            dot.classList.add('bg-white');
+        } else {
+            dot.classList.remove('bg-white');
+            dot.classList.add('bg-white/50');
+        }
+    });
+}
+
+function startAutoSlide() {
+    if (slideInterval) clearInterval(slideInterval);
+    
+    slideInterval = setInterval(() => {
+        nextSlide();
+    }, 5000); // 5 saniyede bir geçiş
+}
+
+function stopAutoSlide() {
+    if (slideInterval) {
+        clearInterval(slideInterval);
+        slideInterval = null;
+    }
+}
+
+// Mouse hover'da otomatik geçişi durdur
+function setupSliderHoverEvents() {
+    const bannerContainer = document.getElementById('banner-container');
+    if (bannerContainer) {
+        bannerContainer.addEventListener('mouseenter', stopAutoSlide);
+        bannerContainer.addEventListener('mouseleave', startAutoSlide);
+    }
 }

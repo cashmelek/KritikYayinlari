@@ -35,7 +35,7 @@ async function loadPageBanners() {
             const { data: banners, error } = await window.supabaseClient
                 .from('banners')
                 .select('*')
-                .eq('active', true)
+                .eq('is_active', true)
                 .order('order_number', { ascending: true });
                 
             console.log('Banner sorgu sonucu:', { banners, error });

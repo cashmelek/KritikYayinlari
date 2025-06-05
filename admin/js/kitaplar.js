@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Kitap formunu ayarla
     setupBookForm();
+
+    // Görsel Upload Validasyonu ve Optimizasyonu
+    setupImageUploadValidation();
 });
 
 // Supabase şemasını kontrol et
@@ -692,4 +695,245 @@ function showNotification(message, type = 'success') {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+}
+
+// Görsel Upload Validasyonu ve Optimizasyonu
+function setupImageUploadValidation() {
+    const coverInput = document.getElementById('bookCover');
+    const previewImg = document.getElementById('bookCoverPreview');
+    const uploadArea = document.getElementById('imageUploadArea');
+    
+    // Upload area'ya tıklama event'i ekle
+    if (uploadArea && coverInput) {
+        uploadArea.addEventListener('click', function() {
+            coverInput.click();
+        });
+        
+        // Drag & Drop fonksiyonalitesi
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('border-primary', 'bg-primary/5');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary', 'bg-primary/5');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary', 'bg-primary/5');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(files[0]);
+                coverInput.files = dataTransfer.files;
+                
+                // Change event'ini manuel olarak tetikle
+                const changeEvent = new Event('change', { bubbles: true });
+                coverInput.dispatchEvent(changeEvent);
+            }
+        });
+    }
+    
+    if (coverInput) {
+        coverInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Loading state göster
+            const spinner = showImageLoadingState(previewImg);
+            
+            try {
+                // Dosya validasyonu
+                const isValid = await validateImageFile(file);
+                if (!isValid) {
+                    e.target.value = ''; // Input'u temizle
+                    hideImageLoadingState(previewImg, spinner);
+                    return;
+                }
+                
+                // Görsel optimizasyonu ve önizleme
+                const optimizedFile = await optimizeImage(file);
+                if (optimizedFile) {
+                    // Önizleme göster
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        previewImg.style.opacity = '0';
+                        previewImg.style.animation = 'fadeInImage 0.5s ease-in-out forwards';
+                        hideImageLoadingState(previewImg, spinner);
+                    };
+                    reader.readAsDataURL(optimizedFile);
+                    
+                    // Optimized file'ı input'a ata (gerçek upload için)
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(optimizedFile);
+                    coverInput.files = dataTransfer.files;
+                    
+                    showNotification('Görsel başarıyla yüklendi ve optimize edildi!', 'success');
+                }
+            } catch (error) {
+                console.error('Görsel yükleme hatası:', error);
+                showNotification('Görsel yüklenirken bir hata oluştu.', 'error');
+                hideImageLoadingState(previewImg, spinner);
+            }
+        });
+    }
+}
+
+// Görsel dosya validasyonu
+async function validateImageFile(file) {
+    // Dosya tipi kontrolü
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        showNotification('Sadece JPEG, PNG ve WebP formatları desteklenmektedir.', 'error');
+        return false;
+    }
+    
+    // Dosya boyutu kontrolü (Max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+        showNotification('Dosya boyutu 5MB\'dan küçük olmalıdır.', 'error');
+        return false;
+    }
+    
+    // Görsel boyutları kontrolü
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = function() {
+            // Minimum boyut kontrolü: 400x600px (3:4 oranı)
+            if (img.width < 400 || img.height < 600) {
+                showNotification('Görsel en az 400x600px boyutunda olmalıdır.', 'error');
+                resolve(false);
+                return;
+            }
+            
+            // Maksimum boyut kontrolü: 2000x3000px
+            if (img.width > 2000 || img.height > 3000) {
+                showNotification('Görsel en fazla 2000x3000px boyutunda olmalıdır.', 'error');
+                resolve(false);
+                return;
+            }
+            
+            // Oran kontrolü (3:4 oranına yakın olmalı)
+            const ratio = img.width / img.height;
+            const idealRatio = 3 / 4; // 0.75
+            const tolerance = 0.1; // %10 tolerans
+            
+            if (Math.abs(ratio - idealRatio) > tolerance) {
+                showNotification('Görsel 3:4 oranında (kitap kapağı formatında) olmalıdır.', 'warning');
+                // Uyarı ver ama devam et
+            }
+            
+            resolve(true);
+        };
+        
+        img.onerror = function() {
+            showNotification('Görsel dosyası bozuk veya geçersiz.', 'error');
+            resolve(false);
+        };
+        
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// Görsel optimizasyonu
+async function optimizeImage(file) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = function() {
+            // Hedef boyutları hesapla (max 800x1200px, 3:4 oranı koruyarak)
+            let { width, height } = calculateOptimalSize(img.width, img.height);
+            
+            // Canvas boyutlarını ayarla
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Kaliteli yeniden boyutlandırma ayarları
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Görseli çiz
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Optimized blob oluştur
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    // Yeni File objesi oluştur
+                    const optimizedFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    
+                    console.log(`Görsel optimize edildi: ${file.size} → ${optimizedFile.size} bytes`);
+                    resolve(optimizedFile);
+                } else {
+                    console.error('Görsel optimizasyonu başarısız');
+                    resolve(file); // Orijinal dosyayı döndür
+                }
+            }, 'image/jpeg', 0.9); // %90 JPEG kalitesi
+        };
+        
+        img.onerror = function() {
+            console.error('Görsel yüklenemedi');
+            resolve(file); // Orijinal dosyayı döndür
+        };
+        
+        img.src = URL.createObjectURL(file);
+    });
+}
+
+// Optimal boyut hesaplama
+function calculateOptimalSize(originalWidth, originalHeight) {
+    const maxWidth = 800;
+    const maxHeight = 1200;
+    const aspectRatio = originalWidth / originalHeight;
+    
+    let width = originalWidth;
+    let height = originalHeight;
+    
+    // Boyutları küçült (gerekirse)
+    if (width > maxWidth) {
+        width = maxWidth;
+        height = width / aspectRatio;
+    }
+    
+    if (height > maxHeight) {
+        height = maxHeight;
+        width = height * aspectRatio;
+    }
+    
+    return {
+        width: Math.round(width),
+        height: Math.round(height)
+    };
+}
+
+// Görsel yükleme durumu göstergesi
+function showImageLoadingState(element) {
+    element.style.opacity = '0.5';
+    element.style.filter = 'blur(2px)';
+    
+    // Loading spinner ekle
+    const spinner = document.createElement('div');
+    spinner.className = 'absolute inset-0 flex items-center justify-center bg-white bg-opacity-75';
+    spinner.innerHTML = '<div class="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>';
+    element.parentElement.style.position = 'relative';
+    element.parentElement.appendChild(spinner);
+    
+    return spinner;
+}
+
+// Görsel yükleme tamamlandı
+function hideImageLoadingState(element, spinner) {
+    element.style.opacity = '1';
+    element.style.filter = 'none';
+    if (spinner && spinner.parentElement) {
+        spinner.parentElement.removeChild(spinner);
+    }
 }

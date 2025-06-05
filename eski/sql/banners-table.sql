@@ -1,1 +1,0 @@
-CREATE TABLE banners (id SERIAL PRIMARY KEY, title TEXT NOT NULL, description TEXT, image_url TEXT NOT NULL, link TEXT, location TEXT NOT NULL, status TEXT NOT NULL, start_date TIMESTAMP, end_date TIMESTAMP, click_count INTEGER DEFAULT 0, created_at TIMESTAMP DEFAULT NOW(), updated_at TIMESTAMP DEFAULT NOW()); 

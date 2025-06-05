@@ -138,26 +138,31 @@ async function loadPageContent() {
         if (!data && window.supabaseClient) {
             console.log('Supabase\'den veri yükleniyor...');
             
-            const { data: supabaseData, error } = await supabaseClient
-                .from('contact_page')
-                .select('*')
-                .single();
+            try {
+                const { data: supabaseData, error } = await window.supabaseClient
+                    .from('contact_page')
+                    .select('*')
+                    .single();
+                    
+                if (error) {
+                    console.error('Supabase veri yükleme hatası:', error);
+                    loadDefaultContent();
+                    return;
+                }
                 
-            if (error) {
-                console.error('Supabase veri yükleme hatası:', error);
-                loadDefaultContent();
-                return;
-            }
-            
-            if (supabaseData) {
-                console.log('Supabase\'den veri yüklendi:', supabaseData);
-                updatePageContent(supabaseData);
-                contentLoaded = true;
-                
-                // LocalStorage'a kaydet
-                localStorage.setItem('kritik_contact_page_data', JSON.stringify(supabaseData));
-            } else {
-                console.warn('Supabase\'de veri bulunamadı, varsayılan içerik yükleniyor');
+                if (supabaseData) {
+                    console.log('Supabase\'den veri yüklendi:', supabaseData);
+                    updatePageContent(supabaseData);
+                    contentLoaded = true;
+                    
+                    // LocalStorage'a kaydet
+                    localStorage.setItem('kritik_contact_page_data', JSON.stringify(supabaseData));
+                } else {
+                    console.warn('Supabase\'de veri bulunamadı, varsayılan içerik yükleniyor');
+                    loadDefaultContent();
+                }
+            } catch (supabaseError) {
+                console.error('Supabase bağlantı hatası:', supabaseError);
                 loadDefaultContent();
             }
         } else if (!data) {
@@ -186,19 +191,16 @@ function updatePageContent(data) {
     try {
         console.log('İletişim sayfası içeriği güncelleniyor:', data);
         
-        // İletişim bilgilerini güncelle
-        updateContactInfo(data);
-        
-        // Çalışma saatlerini güncelle
-        updateOfficeHours(data);
-        
-        // İletişim formunu güncelle
-        updateContactForm(data);
-        
-        // Harita iframe'ini güncelle
-        updateMap(data);
+        // İletişim bilgilerini güncelle - null kontrolü ile
+        if (data) {
+            updateContactInfo(data);
+            updateOfficeHours(data);
+            updateContactForm(data);
+            updateMap(data);
+        }
         
         console.log('İletişim sayfası içeriği başarıyla güncellendi');
+        
     } catch (error) {
         console.error('Sayfa içeriği güncellenirken hata:', error);
     }
@@ -207,44 +209,48 @@ function updatePageContent(data) {
 // İletişim bilgilerini günceller
 function updateContactInfo(data) {
     try {
-        // Adres
+        // Adres - null kontrolü ile
         const addressElement = document.querySelector('.contact-info .address span');
         if (addressElement && data.address) {
             addressElement.textContent = data.address;
         }
         
-        // Telefon numaraları
-        if (data.phone_numbers && data.phone_numbers.length > 0) {
+        // Telefon numaraları - null ve array kontrolü ile
+        if (data.phone_numbers && Array.isArray(data.phone_numbers) && data.phone_numbers.length > 0) {
             const phoneContainer = document.querySelector('.contact-info .phone-list');
             if (phoneContainer) {
                 phoneContainer.innerHTML = '';
                 
                 data.phone_numbers.forEach(phone => {
-                    const phoneItem = document.createElement('li');
-                    phoneItem.className = 'flex items-center';
-                    phoneItem.innerHTML = `
-                        <i class="ri-phone-line text-primary text-lg mr-3"></i>
-                        <span>${phone}</span>
-                    `;
-                    phoneContainer.appendChild(phoneItem);
+                    if (phone && phone.trim()) {
+                        const phoneItem = document.createElement('li');
+                        phoneItem.className = 'flex items-center';
+                        phoneItem.innerHTML = `
+                            <i class="ri-phone-line text-primary text-lg mr-3"></i>
+                            <span>${phone}</span>
+                        `;
+                        phoneContainer.appendChild(phoneItem);
+                    }
                 });
             }
         }
         
-        // E-posta adresleri
-        if (data.email_addresses && data.email_addresses.length > 0) {
+        // E-posta adresleri - null ve array kontrolü ile
+        if (data.email_addresses && Array.isArray(data.email_addresses) && data.email_addresses.length > 0) {
             const emailContainer = document.querySelector('.contact-info .email-list');
             if (emailContainer) {
                 emailContainer.innerHTML = '';
                 
                 data.email_addresses.forEach(email => {
-                    const emailItem = document.createElement('li');
-                    emailItem.className = 'flex items-center';
-                    emailItem.innerHTML = `
-                        <i class="ri-mail-line text-primary text-lg mr-3"></i>
-                        <span>${email}</span>
-                    `;
-                    emailContainer.appendChild(emailItem);
+                    if (email && email.trim()) {
+                        const emailItem = document.createElement('li');
+                        emailItem.className = 'flex items-center';
+                        emailItem.innerHTML = `
+                            <i class="ri-mail-line text-primary text-lg mr-3"></i>
+                            <span>${email}</span>
+                        `;
+                        emailContainer.appendChild(emailItem);
+                    }
                 });
             }
         }
@@ -256,43 +262,47 @@ function updateContactInfo(data) {
 // Çalışma saatlerini günceller
 function updateOfficeHours(data) {
     try {
-        // Ofis çalışma saatleri
-        if (data.office_hours && data.office_hours.length > 0) {
+        // Ofis çalışma saatleri - null ve array kontrolü ile
+        if (data.office_hours && Array.isArray(data.office_hours) && data.office_hours.length > 0) {
             const officeHoursContainer = document.querySelector('.office-hours-list');
             if (officeHoursContainer) {
                 officeHoursContainer.innerHTML = '';
                 
                 data.office_hours.forEach(item => {
-                    const hoursItem = document.createElement('li');
-                    hoursItem.className = 'flex justify-between border-b border-gray-100 py-2 last:border-0';
-                    hoursItem.innerHTML = `
-                        <span class="font-medium">${item.day}</span>
-                        <span>${item.hours}</span>
-                    `;
-                    officeHoursContainer.appendChild(hoursItem);
+                    if (item && item.day && item.hours) {
+                        const hoursItem = document.createElement('li');
+                        hoursItem.className = 'flex justify-between border-b border-gray-100 py-2 last:border-0';
+                        hoursItem.innerHTML = `
+                            <span class="font-medium">${item.day}</span>
+                            <span>${item.hours}</span>
+                        `;
+                        officeHoursContainer.appendChild(hoursItem);
+                    }
                 });
             }
         }
         
-        // Kitabevi çalışma saatleri
-        if (data.bookstore_hours && data.bookstore_hours.length > 0) {
+        // Kitabevi çalışma saatleri - null ve array kontrolü ile
+        if (data.bookstore_hours && Array.isArray(data.bookstore_hours) && data.bookstore_hours.length > 0) {
             const bookstoreHoursContainer = document.querySelector('.bookstore-hours-list');
             if (bookstoreHoursContainer) {
                 bookstoreHoursContainer.innerHTML = '';
                 
                 data.bookstore_hours.forEach(item => {
-                    const hoursItem = document.createElement('li');
-                    hoursItem.className = 'flex justify-between border-b border-gray-100 py-2 last:border-0';
-                    hoursItem.innerHTML = `
-                        <span class="font-medium">${item.day}</span>
-                        <span>${item.hours}</span>
-                    `;
-                    bookstoreHoursContainer.appendChild(hoursItem);
+                    if (item && item.day && item.hours) {
+                        const hoursItem = document.createElement('li');
+                        hoursItem.className = 'flex justify-between border-b border-gray-100 py-2 last:border-0';
+                        hoursItem.innerHTML = `
+                            <span class="font-medium">${item.day}</span>
+                            <span>${item.hours}</span>
+                        `;
+                        bookstoreHoursContainer.appendChild(hoursItem);
+                    }
                 });
             }
         }
         
-        // Ek bilgi
+        // Ek bilgi - null kontrolü ile
         const additionalInfoElement = document.querySelector('.hours-additional-info');
         if (additionalInfoElement && data.hours_additional_info) {
             additionalInfoElement.textContent = data.hours_additional_info;
@@ -305,19 +315,19 @@ function updateOfficeHours(data) {
 // İletişim formunu günceller
 function updateContactForm(data) {
     try {
-        // Form başlığı
+        // Form başlığı - null kontrolü ile
         const formTitleElement = document.querySelector('.contact-form-title');
         if (formTitleElement && data.contact_form_title) {
             formTitleElement.textContent = data.contact_form_title;
         }
         
-        // Gizlilik metni
+        // Gizlilik metni - null kontrolü ile
         const privacyTextElement = document.querySelector('.privacy-text');
         if (privacyTextElement && data.privacy_text) {
             privacyTextElement.textContent = data.privacy_text;
         }
         
-        // Form aktif/pasif
+        // Form aktif/pasif - null kontrolü ile
         const contactFormElement = document.querySelector('#contactForm');
         if (contactFormElement) {
             // enable_contact_form alanının doğru şekilde kontrol edilmesi
@@ -358,56 +368,72 @@ function updateContactForm(data) {
 
 // Form gönderi işlemlerini ayarla
 function setupContactForm(data) {
-    const contactForm = document.getElementById('contactForm');
-    if (!contactForm) return;
-    
-    // Daha önce event listener eklenmiş olabilir, önce temizle
-    const newContactForm = contactForm.cloneNode(true);
-    contactForm.parentNode.replaceChild(newContactForm, contactForm);
-    
-    newContactForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
+    try {
+        const contactForm = document.getElementById('contactForm');
+        if (!contactForm) return;
         
-        const nameInput = document.getElementById('name');
-        const emailInput = document.getElementById('email');
-        const subjectInput = document.getElementById('subject');
-        const messageInput = document.getElementById('message');
+        // Daha önce event listener eklenmiş olabilir, önce temizle
+        const newContactForm = contactForm.cloneNode(true);
+        contactForm.parentNode.replaceChild(newContactForm, contactForm);
         
-        // Form verilerini topla
-        const formData = {
-            name: nameInput.value,
-            email: emailInput.value,
-            subject: subjectInput.value,
-            message: messageInput.value,
-            created_at: new Date().toISOString()
-        };
-        
-        // Gönderme butonunu devre dışı bırak ve loading göster
-        const submitBtn = newContactForm.querySelector('button[type="submit"]');
-        const originalBtnText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="ri-loader-2-line animate-spin mr-2"></i> Gönderiliyor...';
-        
-        try {
-            // LocalStorage'a kaydedebiliriz (örnek)
-            const existingMessages = JSON.parse(localStorage.getItem('contact_form_messages') || '[]');
-            existingMessages.push(formData);
-            localStorage.setItem('contact_form_messages', JSON.stringify(existingMessages));
+        newContactForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            // Başarılı mesajı göster
-            showFormMessage(data.success_message || 'Mesajınız için teşekkür ederiz! En kısa sürede size dönüş yapacağız.', 'success');
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const subjectInput = document.getElementById('subject');
+            const messageInput = document.getElementById('message');
             
-            // Formu temizle
-            newContactForm.reset();
-        } catch (error) {
-            console.error('Form gönderimi sırasında hata:', error);
-            showFormMessage('Mesajınız gönderilirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'error');
-        } finally {
-            // Gönderme butonunu tekrar aktif et
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalBtnText;
-        }
-    });
+            // Element kontrolü
+            if (!nameInput || !emailInput || !subjectInput || !messageInput) {
+                console.error('Form elementleri bulunamadı');
+                showFormMessage('Form elementleri bulunamadı. Lütfen sayfayı yenileyin.', 'error');
+                return;
+            }
+            
+            // Form verilerini topla
+            const formData = {
+                name: nameInput.value || '',
+                email: emailInput.value || '',
+                subject: subjectInput.value || '',
+                message: messageInput.value || '',
+                created_at: new Date().toISOString()
+            };
+            
+            // Gönderme butonunu devre dışı bırak ve loading göster
+            const submitBtn = newContactForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="ri-loader-2-line animate-spin mr-2"></i> Gönderiliyor...';
+                
+                try {
+                    // LocalStorage'a kaydedebiliriz (örnek)
+                    const existingMessages = JSON.parse(localStorage.getItem('contact_form_messages') || '[]');
+                    existingMessages.push(formData);
+                    localStorage.setItem('contact_form_messages', JSON.stringify(existingMessages));
+                    
+                    // Başarılı mesajı göster
+                    const successMessage = data && data.success_message ? 
+                        data.success_message : 
+                        'Mesajınız için teşekkür ederiz! En kısa sürede size dönüş yapacağız.';
+                    showFormMessage(successMessage, 'success');
+                    
+                    // Formu temizle
+                    newContactForm.reset();
+                } catch (error) {
+                    console.error('Form gönderimi sırasında hata:', error);
+                    showFormMessage('Mesajınız gönderilirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'error');
+                } finally {
+                    // Butonu eski haline getir
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Form setup sırasında hata:', error);
+    }
 }
 
 // Harita iframe'ini günceller
