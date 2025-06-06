@@ -53,3 +53,5 @@ supabase-config.local.js
 # Diğer
 *.cache 
 .vercel
+
+.vercel

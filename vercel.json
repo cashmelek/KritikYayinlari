@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "./",
   "rewrites": [
     { "source": "/login", "destination": "/admin/login.html" },
     { "source": "/login.html", "destination": "/admin/login.html" },
