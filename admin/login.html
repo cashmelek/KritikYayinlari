@@ -214,6 +214,14 @@
             
             <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">Admin Paneli Girişi</h1>
             
+            <!-- GEÇİCİ BİLDİRİM -->
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded">
+                <p class="text-sm">
+                    <i class="ri-information-line mr-2"></i>
+                    <strong>Geçici Mod:</strong> Kimlik doğrulama geçici olarak devre dışı bırakılmıştır. Herhangi bir kullanıcı adı ile giriş yapabilirsiniz.
+                </p>
+            </div>
+            
             <!-- Normal giriş formu -->
             <form id="loginForm">
                 <div class="mb-4">
@@ -222,17 +230,17 @@
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="ri-user-line text-gray-400"></i>
                         </div>
-                        <input type="text" id="username" name="username" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none" placeholder="Kullanıcı adınızı giriniz" required>
+                        <input type="text" id="username" name="username" class="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none" placeholder="İsteğe bağlı - herhangi bir isim girin">
                     </div>
                 </div>
                 
-                <div class="mb-6">
+                <div class="mb-6" style="display: none;">
                     <label for="password" class="block text-gray-700 font-medium mb-2">Şifre</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="ri-lock-line text-gray-400"></i>
                         </div>
-                        <input type="password" id="password" name="password" class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none" placeholder="Şifrenizi giriniz" required>
+                        <input type="password" id="password" name="password" class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none" value="temp123">
                         <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center">
                             <i class="ri-eye-off-line text-gray-400 hover:text-gray-600"></i>
                         </button>
@@ -244,14 +252,18 @@
                         <input type="checkbox" id="remember" name="remember" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
                         <label for="remember" class="ml-2 block text-sm text-gray-700">Beni hatırla</label>
                     </div>
-                    <div>
+                    <div style="display: none;">
                         <span id="forgotPasswordBtn" class="text-sm text-gray-600 hover:text-gray-800 cursor-pointer">Şifremi Unuttum</span>
                     </div>
                 </div>
                 
                 <button type="submit" class="login-btn w-full py-3 px-4 border border-transparent rounded-lg text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary mb-4">
-                    Giriş Yap
+                    <i class="ri-login-box-line mr-2"></i> Giriş Yap
                 </button>
+                
+                <p class="text-center text-sm text-gray-500 mt-4">
+                    Bu geçici giriş modu sadece test amaçlıdır.
+                </p>
             </form>
             
             <!-- Magic link giriş formu -->

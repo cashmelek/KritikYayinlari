@@ -1,4 +1,5 @@
 // Kritik Yayınları Admin Panel - Login JS
+// GEÇİCİ OLARAK KİMLİK DOĞRULAMA DEVRE DIŞI
 
 // Sayfa yüklendiğinde çalışacak fonksiyon
 document.addEventListener('DOMContentLoaded', function() {
@@ -9,8 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Formun normal davranışını engelle
             event.preventDefault();
             
-            // Giriş işlemini başlat
-            handleLogin();
+            // GEÇİCİ: Direkt giriş yapma
+            handleDirectLogin();
         });
     }
     
@@ -43,8 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Giriş işlemini yönet
-async function handleLogin() {
+// GEÇİCİ: Direkt giriş işlemini yönet (kimlik doğrulama olmadan)
+function handleDirectLogin() {
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
     const rememberCheckbox = document.getElementById('remember');
@@ -55,13 +56,7 @@ async function handleLogin() {
         return;
     }
     
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value;
-    
-    if (!username || !password) {
-        showNotification('Kullanıcı adı ve şifre gerekli', 'error');
-        return;
-    }
+    const username = usernameInput.value.trim() || 'admin';
     
     // Yükleniyor göstergesini göster
     const originalBtnText = submitBtn.innerHTML;
@@ -73,49 +68,37 @@ async function handleLogin() {
         if (rememberCheckbox && rememberCheckbox.checked) {
             localStorage.setItem('kritik_admin_remember', 'true');
             localStorage.setItem('kritik_admin_username', username);
-        } else {
-            localStorage.removeItem('kritik_admin_remember');
-            localStorage.removeItem('kritik_admin_username');
         }
         
-        // Edge Function'a istek gönder
-        const EDGE_FUNCTION_URL = 'https://lddzbhbzaxigfejysary.supabase.co/functions/v1/admin-auth';
+        // GEÇİCİ: Demo kullanıcı verisi oluştur
+        const mockUser = {
+            id: 1,
+            username: username || 'admin',
+            email: 'admin@kritikyayinlari.com',
+            name: 'Yönetici',
+            role: 'admin'
+        };
         
-        const response = await fetch(EDGE_FUNCTION_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username: username,
-                password: password
-            })
-        });
+        const mockSession = {
+            token: 'mock_token_' + Date.now(),
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 saat sonra
+        };
         
-        const data = await response.json();
+        // Oturum bilgilerini kaydet
+        sessionStorage.setItem('kritik_admin_logged_in', 'true');
+        sessionStorage.setItem('kritik_admin_user', JSON.stringify(mockUser));
+        sessionStorage.setItem('kritik_admin_user_data', JSON.stringify(mockUser));
+        sessionStorage.setItem('kritik_admin_login_time', new Date().toISOString());
+        sessionStorage.setItem('kritik_admin_session', JSON.stringify(mockSession));
         
-        if (data.success) {
-            // Giriş başarılı
-            console.log('Giriş başarılı:', data);
-            
-            // Oturum bilgilerini kaydet
-            sessionStorage.setItem('kritik_admin_logged_in', 'true');
-            sessionStorage.setItem('kritik_admin_user', JSON.stringify(data.user));
-            sessionStorage.setItem('kritik_admin_user_data', JSON.stringify(data.user));
-            sessionStorage.setItem('kritik_admin_login_time', new Date().toISOString());
-            sessionStorage.setItem('kritik_admin_session', JSON.stringify(data.session));
-            
-            // Başarılı bildirim göster
-            showNotification('Giriş başarılı, yönlendiriliyor...', 'success');
-            
-            // Admin paneline yönlendir
-            setTimeout(function() {
-                window.location.href = 'index.html';
-            }, 1500);
-        } else {
-            // Giriş başarısız
-            showNotification('Kullanıcı adı veya şifre hatalı', 'error');
-        }
+        // Başarılı bildirim göster
+        showNotification('Giriş başarılı, yönlendiriliyor...', 'success');
+        
+        // Admin paneline yönlendir
+        setTimeout(function() {
+            window.location.href = 'index.html';
+        }, 1000);
+        
     } catch (error) {
         console.error('Giriş işlemi sırasında hata:', error);
         showNotification('Giriş sırasında bir hata oluştu: ' + error.message, 'error');
