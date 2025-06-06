@@ -1,0 +1,22 @@
+# Kritik Yayınları - Vercel Ortam Değişkenleri
+# Bu değerleri Vercel Dashboard > Settings > Environment Variables bölümüne ekleyin
+
+# Supabase Konfigürasyonu
+SUPABASE_URL=https://kyqtdtyubmipiwjrudgc.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5cXRkdHl1Ym1pcGl3anJ1ZGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwODAwODEsImV4cCI6MjA2MzY1NjA4MX0.PiF7N1hPFGFfO_5fg_C640Z3YzsABaqtKfSoMTJ5Kow
+
+# Site Konfigürasyonu
+SITE_URL=https://kritikyayinlari.vercel.app
+ADMIN_EMAIL=admin@kritikyayinlari.com
+
+# Güvenlik
+NODE_ENV=production
+DEBUG=false
+
+# Vercel Konfigürasyonu
+VERCEL_ENV=production
+VERCEL_URL=kritikyayinlari.vercel.app
+
+# Supabase Auth Konfigürasyonu
+NEXT_PUBLIC_SUPABASE_URL=https://kyqtdtyubmipiwjrudgc.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5cXRkdHl1Ym1pcGl3anJ1ZGdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwODAwODEsImV4cCI6MjA2MzY1NjA4MX0.PiF7N1hPFGFfO_5fg_C640Z3YzsABaqtKfSoMTJ5Kow 

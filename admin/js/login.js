@@ -1,7 +1,7 @@
 // ... existing code ...
             // Admin paneline y├Ânlendir
             setTimeout(function() {
-                window.location.href = 'index.html';
+                        window.location.href = 'index.html';
             }, 1500);
         } else {
             // Giri┼ş ba┼şar─▒s─▒z
@@ -42,13 +42,13 @@ function showNotification(message, type = 'success') {
     notification.className = 'notification';
     
     if (type === 'success') {
-        notification.classList.add('bg-green-500');
+            notification.classList.add('bg-green-500');
     } else if (type === 'error') {
-        notification.classList.add('bg-red-500');
+            notification.classList.add('bg-red-500');
     } else if (type === 'warning') {
-        notification.classList.add('bg-yellow-500');
+            notification.classList.add('bg-yellow-500');
     } else if (type === 'info') {
-        notification.classList.add('bg-blue-500');
+            notification.classList.add('bg-blue-500');
     }
     
     // Mesaj─▒ ayarla
