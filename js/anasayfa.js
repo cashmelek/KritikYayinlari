@@ -45,10 +45,22 @@ async function loadPageBanners(location = 'home') {
         // Banner slider HTML'ini oluştur
         bannerContainer.innerHTML = `
             <div class="banner-slider w-full h-full relative overflow-hidden">
-                ${banners.map((banner, index) => `
+                ${banners.map((banner, index) => {
+                    // Banner görselinin var olup olmadığını kontrol et
+                    const imageUrl = banner.image_url || 'https://via.placeholder.com/1200x400?text=Banner+G%C3%B6rseli';
+                    // Base64 formatında bir görsel mi kontrol et
+                    const isBase64Image = typeof imageUrl === 'string' && imageUrl.startsWith('data:image');
+                    
+                    // Sadece debug amaçlı
+                    console.log(`Banner ${index} görseli:`, imageUrl.substring(0, 50) + (imageUrl.length > 50 ? '...' : ''));
+                    
+                    // Görsel URL'ini düzelt
+                    const fixedImageUrl = window.ImageHelper ? window.ImageHelper.fixImageUrl(imageUrl) : imageUrl;
+                    
+                    return `
                     <div class="slide ${index === 0 ? 'active' : ''} absolute inset-0 transition-opacity duration-500 ${index === 0 ? 'opacity-100' : 'opacity-0'}">
                         <div class="slide-bg w-full h-full relative">
-                            <img src="${banner.image_url}" alt="${banner.title}" class="w-full h-full object-cover">
+                            <img src="${fixedImageUrl}" alt="${banner.title}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/1200x400?text=G%C3%B6rsel+Bulunamad%C4%B1'; this.onerror=null;">
                             <div class="absolute inset-0 bg-black bg-opacity-40"></div>
                         </div>
                         <div class="absolute inset-0 flex items-center justify-start">
@@ -62,7 +74,7 @@ async function loadPageBanners(location = 'home') {
                             </div>
                         </div>
                     </div>
-                `).join('')}
+                `}).join('')}
                 
                 ${banners.length > 1 ? `
                     <!-- Navigation Arrows -->
@@ -90,6 +102,18 @@ async function loadPageBanners(location = 'home') {
         
         // Hover event'lerini ayarla
         setupSliderHoverEvents();
+        
+        // Görselleri düzelt (ImageHelper mevcut ise)
+        if (window.ImageHelper) {
+            setTimeout(() => {
+                const bannerSliderImages = bannerContainer.querySelectorAll('img');
+                bannerSliderImages.forEach((img, index) => {
+                    if (img && banners[index]) {
+                        window.ImageHelper.renderSafeImage(img, banners[index].image_url);
+                    }
+                });
+            }, 100);
+        }
         
         console.log('Banner\'lar başarıyla yüklendi ve gösterildi');
     } catch (error) {
@@ -229,7 +253,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Yeni çıkan kitapları yükle
 async function loadNewBooks() {
     try {
-        // Doğrudan Supabase'den gerçek verileri al
+        // Doğrudan Supabase'den sadece is_new=true olan kitapları al
         const { data: newBooks, error } = await window.supabaseClient
                 .from('books')
                 .select('*, authors(*)')
@@ -257,24 +281,23 @@ async function loadNewBooks() {
     }
 }
 
-// Çok satan kitapları yükle
+// Kitaplarımız bölümü için kitapları yükle
 async function loadBestsellers() {
     try {
-        // Supabase'den gerçek verileri al
-        const { data: bestsellers, error } = await window.supabaseClient
+        // Supabase'den tüm kitapları getir - en son eklenenler
+        const { data: allBooks, error } = await window.supabaseClient
                 .from('books')
                 .select('*, authors(*)')
-            .eq('is_bestseller', true)
                 .order('created_at', { ascending: false })
                 .limit(4);
             
         if (error) {
-            console.error('Çok satan kitaplar sorgulanırken hata:', error);
+            console.error('Kitaplar sorgulanırken hata:', error);
             const container = document.getElementById('bestsellerBooksContainer');
             if (container) {
                 container.innerHTML = `
                     <div class="col-span-full text-center py-6">
-                        <p class="text-gray-500">Henüz çok satan kitap eklenmemiş</p>
+                        <p class="text-gray-500">Henüz kitap eklenmemiş</p>
                     </div>
                 `;
             }
@@ -282,9 +305,9 @@ async function loadBestsellers() {
         }
         
         // Verileri göster
-        displayBooks(bestsellers, 'bestsellerBooksContainer');
+        displayBooks(allBooks, 'bestsellerBooksContainer');
     } catch (error) {
-        console.error('Çok satan kitaplar yüklenirken hata:', error);
+        console.error('Kitaplar yüklenirken hata:', error);
     }
 }
 
@@ -344,7 +367,7 @@ async function loadAuthors() {
             return `
             <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300">
                 <a href="yazarlar.html?yazar_id=${author.id}" class="block">
-                    <div class="relative h-48 overflow-hidden bg-gray-100">
+                    <div class="aspect-square overflow-hidden bg-gray-100">
                         <img src="${photoUrl}" alt="${author.name}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" onerror="this.src='images/placeholder-author.png'">
                     </div>
                     <div class="p-4">
@@ -404,37 +427,38 @@ function displayBooks(books, containerId) {
             }
         }
         
-        // Fiyat bilgisini kontrol et
-        const price = book.price || '';
-        const originalPrice = book.original_price || '';
-        const hasDiscount = book.discount && book.discount > 0;
+        // Kitap başlığını güvenli hale getir
+        const bookTitle = book.title || '';
         
-        // İndirim yüzdesi
-        const discountPercent = book.discount || 0;
+        // Kitap ID'sini güvenli hale getir
+        const bookId = parseInt(book.id) || 0;
         
-        // Kapak görseli URL'i
-        const coverUrl = book.cover_url || 'images/placeholder.png';
+        // Etiketleri belirle
+        let isNew = '';
         
-        // Kitap kartını oluştur
+        // is_new özelliği true olan kitaplar için "Yeni" etiketi göster
+        if (book.is_new === true) {
+            isNew = '<div class="absolute top-3 right-3"><span class="bg-primary text-white text-xs px-2 py-1 rounded-full">Yeni</span></div>';
+        }
+        
+        // Görsel URL'sini işle
+        let coverUrl = 'images/placeholder.png';
+        if (book.cover_url) {
+            coverUrl = book.cover_url;
+        }
+        
         return `
-        <div class="book-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300">
-            <a href="kitap-detay.html?id=${book.id}" class="block">
-                <div class="relative h-64 overflow-hidden bg-gray-100">
-                    <img src="${coverUrl}" alt="${book.title}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" onerror="this.src='images/placeholder.png'">
-                    ${hasDiscount ? `<div class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">%${discountPercent} İndirim</div>` : ''}
-                    ${book.is_new ? `<div class="absolute top-2 left-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded">Yeni</div>` : ''}
+            <div class="book-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <a href="kitap-detay.html?kitap_id=${bookId}" class="block">
+                    <div class="aspect-square overflow-hidden bg-gray-100 relative">
+                        <img src="${coverUrl}" alt="${bookTitle}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" onerror="this.src='images/placeholder.png'">
+                        ${isNew}
                 </div>
                 <div class="p-4">
-                    <h3 class="text-lg font-bold text-secondary line-clamp-2 h-14">${book.title}</h3>
-                    <p class="text-gray-600 mb-2">${authorName}</p>
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <span class="text-primary font-bold">${price}</span>
-                            ${hasDiscount ? `<span class="text-gray-400 line-through text-sm ml-2">${originalPrice}</span>` : ''}
-                        </div>
-                        <button class="bg-primary hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">
-                            İncele
-                        </button>
+                        <h3 class="font-bold text-gray-800 mb-1 line-clamp-2">${bookTitle}</h3>
+                        <p class="text-gray-600 text-sm mb-2">${authorName}</p>
+                        <div class="flex justify-end items-center mt-2">
+                            <span class="bg-primary text-white text-xs px-3 py-1 rounded-full">İncele</span>
                     </div>
                 </div>
             </a>

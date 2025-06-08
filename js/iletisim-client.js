@@ -446,23 +446,84 @@ function updateMap(data) {
             // Mevcut haritayı temizle
             mapContainer.innerHTML = '';
             
-            // Harita iframe'ini ekle
-            const iframe = document.createElement('iframe');
-            iframe.className = 'w-full h-full rounded-lg border-0';
-            iframe.frameBorder = "0";
-            iframe.style.border = "0";
-            iframe.src = data.map_iframe;
-            iframe.allowFullscreen = true;
-            iframe.loading = "lazy";
-            iframe.referrerPolicy = "no-referrer-when-downgrade";
-            
-            mapContainer.appendChild(iframe);
+            try {
+                // URL'i temizleme ve güvenli hale getirme
+                let cleanIframeSrc = data.map_iframe;
+                
+                // İçeriğin Google Maps embed URL'i olduğundan emin ol
+                if (cleanIframeSrc.includes('google.com/maps/embed')) {
+                    // Harita iframe'ini ekle
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'w-full h-full rounded-lg border-0';
+                    iframe.frameBorder = "0";
+                    iframe.style.border = "0";
+                    iframe.src = cleanIframeSrc;
+                    iframe.allowFullscreen = true;
+                    iframe.loading = "lazy";
+                    iframe.referrerPolicy = "no-referrer-when-downgrade";
+                    
+                    mapContainer.appendChild(iframe);
+                    console.log('Harita iframe başarıyla eklendi');
+                } else {
+                    // Varsayılan Kadıköy haritası
+                    const defaultMap = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d48170.84554246369!2d29.023479591057594!3d40.98892123833761!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cab82bea5b9afb%3A0x2e92a483541e2860!2sKad%C4%B1k%C3%B6y%2F%C4%B0stanbul!5e0!3m2!1str!2str!4v1684254161112!5m2!1str!2str';
+                    
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'w-full h-full rounded-lg border-0';
+                    iframe.frameBorder = "0";
+                    iframe.style.border = "0";
+                    iframe.src = defaultMap;
+                    iframe.allowFullscreen = true;
+                    iframe.loading = "lazy";
+                    iframe.referrerPolicy = "no-referrer-when-downgrade";
+                    
+                    mapContainer.appendChild(iframe);
+                    console.log('Geçersiz harita URL\'i, varsayılan harita kullanıldı');
+                }
+            } catch (iframeError) {
+                console.error('Harita iframe oluşturma hatası:', iframeError);
+                // Hata durumunda varsayılan harita göster
+                mapContainer.innerHTML = `
+                    <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d48170.84554246369!2d29.023479591057594!3d40.98892123833761!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cab82bea5b9afb%3A0x2e92a483541e2860!2sKad%C4%B1k%C3%B6y%2F%C4%B0stanbul!5e0!3m2!1str!2str!4v1684254161112!5m2!1str!2str" 
+                        width="100%" 
+                        height="100%" 
+                        style="border:0;" 
+                        allowfullscreen="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>`;
+            }
         } else {
             // Varsayılan harita (opsiyonel)
-            mapContainer.innerHTML = '<div class="bg-gray-100 w-full h-full flex items-center justify-center text-gray-500">Harita bulunamadı</div>';
+            mapContainer.innerHTML = `
+                <iframe 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d48170.84554246369!2d29.023479591057594!3d40.98892123833761!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cab82bea5b9afb%3A0x2e92a483541e2860!2sKad%C4%B1k%C3%B6y%2F%C4%B0stanbul!5e0!3m2!1str!2str!4v1684254161112!5m2!1str!2str" 
+                    width="100%" 
+                    height="100%" 
+                    style="border:0;" 
+                    allowfullscreen="" 
+                    loading="lazy" 
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>`;
+            console.log('Harita URL\'i bulunamadı, varsayılan harita kullanıldı');
         }
     } catch (error) {
         console.error('Harita güncellenirken hata:', error);
+        // Hata durumunda varsayılan harita göster
+        const mapContainer = document.querySelector('.map-container');
+        if (mapContainer) {
+            mapContainer.innerHTML = `
+                <iframe 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d48170.84554246369!2d29.023479591057594!3d40.98892123833761!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cab82bea5b9afb%3A0x2e92a483541e2860!2sKad%C4%B1k%C3%B6y%2F%C4%B0stanbul!5e0!3m2!1str!2str!4v1684254161112!5m2!1str!2str" 
+                    width="100%" 
+                    height="100%" 
+                    style="border:0;" 
+                    allowfullscreen="" 
+                    loading="lazy" 
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>`;
+        }
     }
 }
 

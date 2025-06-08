@@ -7,6 +7,10 @@ let contentLoaded = false;
 let updateCheckInterval = null;
 // Supabase subscription
 let supabaseSubscription = null;
+// Son güncellenme zamanı
+let lastLoadTime = 0;
+// Yeniden yükleme kilidi
+let isReloading = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Yükleniyor animasyonunu göster
@@ -34,8 +38,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // localStorage değişikliklerini dinle (fallback için)
     window.addEventListener('storage', handleStorageEvent);
     
-    // Periyodik olarak Supabase'den kontrol et (her 5 saniyede bir)
-    updateCheckInterval = setInterval(checkForSupabaseUpdates, 5000);
+    // Periyodik olarak Supabase'den kontrol et (her 30 saniyede bir)
+    // Daha uzun aralık ayarlayarak gereksiz yeniden yüklemeleri önle
+    if (updateCheckInterval) {
+        clearInterval(updateCheckInterval);
+    }
+    updateCheckInterval = setInterval(checkForSupabaseUpdates, 30000);
 });
 
 // Yükleme işlemi bittiğinde yükleniyor animasyonunu kaldır
@@ -55,10 +63,14 @@ window.addEventListener('load', function() {
 window.addEventListener('beforeunload', function() {
     if (updateCheckInterval) {
         clearInterval(updateCheckInterval);
+        updateCheckInterval = null;
     }
     if (supabaseSubscription) {
         supabaseSubscription.unsubscribe();
+        supabaseSubscription = null;
     }
+    // Storage event listener'ı kaldır
+    window.removeEventListener('storage', handleStorageEvent);
 });
 
 // Real-time subscription kur
@@ -92,7 +104,14 @@ function setupRealtimeSubscription() {
 
 // Supabase'den periyodik güncelleme kontrolü
 async function checkForSupabaseUpdates() {
-    if (!window.supabaseClient) return;
+    if (!window.supabaseClient || isReloading) return;
+    
+    // Son yüklemeden sonra en az 10 saniye geçtiyse kontrol et
+    const now = Date.now();
+    if (now - lastLoadTime < 10000) {
+        console.log('Son yüklemeden beri yeterli süre geçmedi, kontrol atlanıyor');
+        return;
+    }
     
     try {
         const { data, error } = await window.supabaseClient
@@ -107,7 +126,9 @@ async function checkForSupabaseUpdates() {
         
         if (data && data.updated_at && (!window.lastUpdateTimestamp || window.lastUpdateTimestamp !== data.updated_at)) {
             console.log('Yeni güncelleme tespit edildi, sayfa içeriği yenileniyor');
+            isReloading = true;
             loadPageContent();
+            isReloading = false;
         }
     } catch (error) {
         console.error('Periyodik güncelleme kontrolü hatası:', error);
@@ -125,10 +146,12 @@ function handleStorageEvent(event) {
         // Manuel olarak tetiklenen CustomEvent
         key = event.detail.key;
         newValue = event.detail.newValue;
+        console.log('CustomEvent tespit edildi:', key);
     } else {
         // Gerçek storage event
         key = event.key;
         newValue = event.newValue;
+        console.log('Storage event tespit edildi:', key);
     }
     
     // Hakkımızda sayfası verisi güncellendiğinde
@@ -136,7 +159,13 @@ function handleStorageEvent(event) {
         try {
             const data = JSON.parse(newValue);
             console.log('LocalStorage\'dan hakkımızda sayfası verileri güncellendi:', data);
+            
+            // Veri içeriğini kontrol et
+            console.log('LocalStorage vizyon içeriği:', data.vision_content);
+            console.log('LocalStorage misyon içeriği:', data.mission_content);
+            
             updatePageContent(data);
+            showNotification('Sayfa içeriği güncellendi');
         } catch (error) {
             console.error('Storage event parse hatası:', error);
         }
@@ -149,7 +178,16 @@ function handleStorageEvent(event) {
             
             if (updateData.message && updateData.message.type === 'about_page' && updateData.message.action === 'update') {
                 console.log('Genel güncelleme sisteminden Hakkımızda sayfası güncellemesi alındı:', updateData.message);
-                updatePageContent(updateData.message.data);
+                
+                if (updateData.message.data) {
+                    console.log('Güncelleme verisi:', updateData.message.data);
+                    // Veri içeriğini kontrol et
+                    console.log('Güncelleme vizyon içeriği:', updateData.message.data.vision_content);
+                    console.log('Güncelleme misyon içeriği:', updateData.message.data.mission_content);
+                    
+                    updatePageContent(updateData.message.data);
+                    showNotification('Sayfa içeriği güncellendi');
+                }
             }
         } catch (error) {
             console.error('Güncelleme mesajı parse hatası:', error);
@@ -160,6 +198,9 @@ function handleStorageEvent(event) {
 // Sayfa içeriğini yükle
 async function loadPageContent() {
     try {
+        // Son yükleme zamanını kaydet
+        lastLoadTime = Date.now();
+        
         if (!window.supabaseClient) {
             console.error('Supabase bağlantısı yok, varsayılan içerik yükleniyor');
             loadDefaultContent();
@@ -181,7 +222,9 @@ async function loadPageContent() {
                 try {
                     const data = JSON.parse(storedData);
                     console.log('LocalStorage fallback kullanıldı:', data);
-                    updatePageContent(data);
+                    // Veriyi yeni bir nesneye kopyala
+                    const dataCopy = JSON.parse(JSON.stringify(data));
+                    updatePageContent(dataCopy);
                     contentLoaded = true;
                     return;
                 } catch (parseError) {
@@ -198,15 +241,18 @@ async function loadPageContent() {
             // Timestamp'i güncelle
             window.lastUpdateTimestamp = supabaseData.updated_at;
             
+            // Veriyi bağımsız bir kopyaya dönüştür
+            const dataCopy = JSON.parse(JSON.stringify(supabaseData));
+            
             // LocalStorage'a backup olarak kaydet
             try {
-                localStorage.setItem('kritik_about_page_data', JSON.stringify(supabaseData));
+                localStorage.setItem('kritik_about_page_data', JSON.stringify(dataCopy));
             } catch (storageError) {
                 console.warn('LocalStorage\'a kayıt yapılamadı:', storageError);
             }
             
             // İçeriği güncelle
-            updatePageContent(supabaseData);
+            updatePageContent(dataCopy);
             contentLoaded = true;
         } else {
             console.warn('Supabase\'de veri bulunamadı, varsayılan içerik yükleniyor');
@@ -289,30 +335,56 @@ function updatePageContent(data) {
             aboutContent.innerHTML = formattedContent;
         }
         
-        // 3. Vizyon ve Misyon bölümlerini güncelle - doğru selector'larla
-        const visionElements = document.querySelectorAll('.bg-gray-50 p-6');
-        if (visionElements.length >= 1 && data.vision_content) {
-            const visionContent = visionElements[0].querySelector('p.text-gray-600');
-            if (visionContent) {
-                visionContent.innerHTML = data.vision_content; // Placeholder'ı değiştir
-            }
+        // 3. Vizyon ve Misyon bölümlerini güncelle
+        console.log('Vizyon ve Misyon verileri:', {
+            vision_content: data.vision_content,
+            mission_content: data.mission_content
+        });
+        
+        // Vizyon için doğrudan CSS seçiciyi kullanarak elementi bul
+        const visionElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2 .bg-gray-50:nth-child(1) p.text-gray-600');
+        if (visionElement && data.vision_content) {
+            console.log('Vizyon elementi bulundu, içerik güncelleniyor');
+            visionElement.innerHTML = data.vision_content;
+        } else {
+            console.warn('Vizyon elementi bulunamadı veya içerik yok', {
+                elementFound: !!visionElement,
+                contentExists: !!data.vision_content
+            });
         }
         
-        if (visionElements.length >= 2 && data.mission_content) {
-            const missionContent = visionElements[1].querySelector('p.text-gray-600');
-            if (missionContent) {
-                missionContent.innerHTML = data.mission_content; // Placeholder'ı değiştir
-            }
+        // Misyon için doğrudan CSS seçiciyi kullanarak elementi bul
+        const missionElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2 .bg-gray-50:nth-child(2) p.text-gray-600');
+        if (missionElement && data.mission_content) {
+            console.log('Misyon elementi bulundu, içerik güncelleniyor');
+            missionElement.innerHTML = data.mission_content;
+        } else {
+            console.warn('Misyon elementi bulunamadı veya içerik yok', {
+                elementFound: !!missionElement,
+                contentExists: !!data.mission_content
+            });
         }
+        
+        // Alternatif yöntem - tüm vizyon ve misyon kartlarını bul ve içeriklerini güncelle
+        const allCards = document.querySelectorAll('.bg-gray-50.p-6.rounded-lg');
+        console.log('Bulunan kart sayısı:', allCards.length);
+        
+        allCards.forEach((card, index) => {
+            const cardTitle = card.querySelector('h3').textContent.trim();
+            const contentElement = card.querySelector('p.text-gray-600');
+            
+            if (cardTitle.includes('Vizyon') && data.vision_content) {
+                console.log('Vizyon kartı bulundu (alternatif yöntem)');
+                contentElement.innerHTML = data.vision_content;
+            } else if (cardTitle.includes('Misyon') && data.mission_content) {
+                console.log('Misyon kartı bulundu (alternatif yöntem)');
+                contentElement.innerHTML = data.mission_content;
+            }
+        });
         
         // 4. Timeline öğelerini güncelle - null ve array kontrolü ile
         if (data.timeline_items && Array.isArray(data.timeline_items) && data.timeline_items.length > 0) {
             updateTimeline(data.timeline_items);
-        }
-        
-        // 5. Ekip üyelerini güncelle - null ve array kontrolü ile
-        if (data.team_members && Array.isArray(data.team_members) && data.team_members.length > 0) {
-            updateTeamMembers(data.team_members);
         }
         
         console.log('Sayfa içeriği başarıyla güncellendi');
@@ -350,44 +422,6 @@ function updateTimeline(timelineItems) {
         console.log('Timeline güncellendi:', timelineItems.length, 'öğe');
     } catch (error) {
         console.error('Timeline güncellenirken hata:', error);
-    }
-}
-
-// Ekip üyelerini güncelle
-function updateTeamMembers(teamMembers) {
-    try {
-        const teamContainer = document.querySelector('#team-section .grid');
-        if (!teamContainer) {
-            console.warn('Team container bulunamadı');
-            return;
-        }
-        
-        // Mevcut ekip üyelerini temizle
-        teamContainer.innerHTML = '';
-        
-        // Yeni ekip üyelerini ekle
-        teamMembers.forEach((member, index) => {
-            const memberCard = document.createElement('div');
-            memberCard.className = 'bg-white p-6 rounded-lg shadow-md text-center';
-            memberCard.innerHTML = `
-                <div class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden bg-gray-200">
-                    ${member.image ? 
-                        `<img src="${member.image}" alt="${member.name || 'Ekip Üyesi'}" class="w-full h-full object-cover">` :
-                        `<div class="w-full h-full flex items-center justify-center text-gray-400">
-                            <i class="ri-user-line text-3xl"></i>
-                        </div>`
-                    }
-                </div>
-                <h3 class="text-lg font-bold text-secondary mb-2">${member.name || 'İsim Belirtilmemiş'}</h3>
-                <p class="text-primary font-medium mb-3">${member.position || 'Pozisyon Belirtilmemiş'}</p>
-                <p class="text-gray-600 text-sm">${member.description || 'Açıklama yok'}</p>
-            `;
-            teamContainer.appendChild(memberCard);
-        });
-        
-        console.log('Ekip üyeleri güncellendi:', teamMembers.length, 'üye');
-    } catch (error) {
-        console.error('Ekip üyeleri güncellenirken hata:', error);
     }
 }
 
@@ -437,12 +471,22 @@ window.debugHakkimizda = function() {
         try {
             const data = JSON.parse(storedData);
             console.log('LocalStorage Data:', data);
+            console.log('LocalStorage Vizyon:', data.vision_content);
+            console.log('LocalStorage Misyon:', data.mission_content);
         } catch (error) {
             console.log('LocalStorage Parse Error:', error);
         }
     } else {
         console.log('LocalStorage: Veri yok');
     }
+    
+    // DOM Elementleri
+    const visionElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2 .bg-gray-50:nth-child(1) p.text-gray-600');
+    const missionElement = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2 .bg-gray-50:nth-child(2) p.text-gray-600');
+    
+    console.log('DOM elementleri:');
+    console.log('Vizyon element:', visionElement);
+    console.log('Misyon element:', missionElement);
     
     // Supabase'den güncel veri çek
     if (window.supabaseClient) {
@@ -455,6 +499,8 @@ window.debugHakkimizda = function() {
                     console.log('Supabase Error:', error);
                 } else {
                     console.log('Supabase Current Data:', data);
+                    console.log('Supabase Vizyon:', data.vision_content);
+                    console.log('Supabase Misyon:', data.mission_content);
                 }
             });
     }
@@ -462,9 +508,45 @@ window.debugHakkimizda = function() {
     console.log('=== DEBUG BİTİŞ ===');
 };
 
+// Manuel test fonksiyonu - Vizyon ve Misyon içeriklerini test etmek için
+window.testVizyonMisyon = function(vizyon, misyon) {
+    console.log('Test ediliyor - Vizyon:', vizyon);
+    console.log('Test ediliyor - Misyon:', misyon);
+    
+    const testData = {
+        page_title: 'Hakkımızda',
+        page_subtitle: 'Kritik Yayınları\'nın hikayesi ve vizyonu',
+        about_section_title: 'Biz Kimiz?',
+        about_content: 'Test içeriği',
+        vision_content: vizyon || 'Test Vizyon İçeriği',
+        mission_content: misyon || 'Test Misyon İçeriği',
+        timeline_items: [],
+        updated_at: new Date().toISOString()
+    };
+    
+    // Güncellenmiş veriyi localStorage'a kaydet
+    localStorage.setItem('kritik_about_page_data', JSON.stringify(testData));
+    
+    // Storage event tetikle
+    const event = new CustomEvent('storage', {
+        detail: {
+            key: 'kritik_about_page_data',
+            newValue: JSON.stringify(testData)
+        }
+    });
+    
+    window.dispatchEvent(event);
+    
+    // İçeriği güncelle
+    updatePageContent(testData);
+    
+    return 'Test tamamlandı. Vizyon ve Misyon kartları şimdi test içerikleriyle güncellendi.';
+};
+
 // Sayfa yüklendiğinde debug bilgilerini göster
 window.addEventListener('load', function() {
     setTimeout(() => {
         console.log('Hakkımızda sayfası yüklendi. Debug için console\'da "debugHakkimizda()" yazın.');
+        console.log('Manuel test için: "testVizyonMisyon(\'Vizyon test\', \'Misyon test\')" yazın.');
     }, 1000);
 });

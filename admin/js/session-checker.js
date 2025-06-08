@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('beforeunload', function() {
             if (sessionCheckInterval) {
                 clearInterval(sessionCheckInterval);
-            }
+    }
         });
     }
 });
@@ -33,7 +33,7 @@ function checkSession() {
     console.log('Oturum kontrolü yapılıyor... (GEÇİCİ MOD)');
     
     // Oturum bilgilerini kontrol et
-    const isLoggedIn = sessionStorage.getItem('kritik_admin_logged_in') === 'true';
+        const isLoggedIn = sessionStorage.getItem('kritik_admin_logged_in') === 'true';
     
     // Giriş yapılmamışsa login sayfasına yönlendir
     if (!isLoggedIn) {
@@ -63,11 +63,11 @@ function refreshSession() {
 // Giriş sayfasına yönlendirme
 function redirectToLogin() {
     window.location.href = 'login.html';
-}
+        }
 
 // Çıkış yapma
 function logout() {
-    // Oturum bilgilerini temizle
+// Oturum bilgilerini temizle
     sessionStorage.removeItem('kritik_admin_logged_in');
     sessionStorage.removeItem('kritik_admin_user');
     sessionStorage.removeItem('kritik_admin_user_data');

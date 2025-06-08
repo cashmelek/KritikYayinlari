@@ -122,8 +122,8 @@ class LocalDatabase {
 
         if (!this.tables.authors || this.tables.authors.length === 0) {
             this.tables.authors = [
-                {
-                    id: 1,
+            { 
+                id: 1, 
                     name: 'Grigory Petrov',
                     biography: 'Rus yazar ve din adamı',
                     image_url: '',
@@ -135,30 +135,30 @@ class LocalDatabase {
                     name: 'Ahmet Hamdi Tanpınar',
                     biography: 'Türk edebiyatının önemli yazarlarından',
                     image_url: '',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                }
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }
             ];
             saveLocalData('authors', this.tables.authors);
         }
     }
-
+    
     // Supabase benzeri bir API
     from(tableName) {
-        return {
+    return {
             // Veri seçimi
             select: (fields) => {
-                return {
+            return {
                     // Eşitlik kontrolü
                     eq: (field, value) => {
-                        return {
+                    return {
                             // Tek kayıt döndürme
                             single: () => {
                                 try {
                                     const table = this.tables[tableName] || [];
                                     const result = table.find(item => item[field] === value);
-
-                                    return {
+                            
+                            return {
                                         data: result || null,
                                         error: null
                                     };
@@ -188,11 +188,11 @@ class LocalDatabase {
                                     };
                                 }
                             }
-                        };
-                    },
+                            };
+                        },
                     // Sıralama
                     order: (field, options = {}) => {
-                        return {
+                            return {
                             // Kayıt limiti
                             limit: (limit) => {
                                 try {
@@ -206,19 +206,19 @@ class LocalDatabase {
                                     });
 
                                     const limited = sorted.slice(0, limit);
-
-                                    return {
+                        
+                        return {
                                         data: limited,
-                                        error: null
-                                    };
-                                } catch (error) {
+                            error: null
+                        };
+                    } catch (error) {
                                     console.error(`${tableName} tablosunda veri alırken hata:`, error);    
-                                    return {
-                                        data: null,
-                                        error: { message: error.message }
-                                    };
-                                }
-                            },
+                        return {
+                            data: null,
+                            error: { message: error.message }
+                        };
+                    }
+                },
                             // Tüm sıralanmış kayıtları döndürme
                             execute: () => {
                                 try {
@@ -230,7 +230,7 @@ class LocalDatabase {
                                             return a[field] < b[field] ? 1 : -1;
                                         }
                                     });
-
+                                    
                                     return {
                                         data: sorted,
                                         error: null
@@ -272,16 +272,16 @@ class LocalDatabase {
                                 data: table,
                                 error: null
                             };
-                        } catch (error) {
+        } catch (error) {
                             console.error(`${tableName} tablosunda veri alırken hata:`, error);
-                            return {
-                                data: null,
-                                error: { message: error.message }
-                            };
+                                return {
+                                    data: null,
+                                    error: { message: error.message }
+                                };
+                            }
                         }
-                    }
-                };
-            },
+                    };
+                },
             // Veri ekleme/güncelleme
             upsert: (data, options = {}) => {
                 try {
@@ -342,21 +342,21 @@ class LocalDatabase {
                     // Veritabanını güncelle
                     this.tables[tableName] = updatedTable;
                     saveLocalData(tableName, updatedTable);
-                    
-                    return {
+                                
+                                return {
                         data: data,
-                        error: null
-                    };
-                } catch (error) {
+                                    error: null
+                                };
+                                } catch (error) {
                     console.error(`${tableName} tablosuna veri eklerken/güncellerken hata:`, error);
-                    return {
-                        data: null,
-                        error: { message: error.message }
+                                return {
+                                    data: null,
+                                    error: { message: error.message }
+                                };
+                            }
+                        }
                     };
                 }
-            }
-        };
-    }
 
     // Auth simülasyonu için basit fonksiyonlar
     auth = {
@@ -399,15 +399,15 @@ class LocalDatabase {
                     }
                 };
             } catch (error) {
-                return {
-                    data: null,
-                    error: {
+                    return {
+                        data: null,
+                        error: {
                         message: error.message
-                    }
-                };
-            }
-        },
-        
+                        }
+                    };
+                }
+            },
+            
         signInWithOtp: async ({ email }) => {
             // Magic link simülasyonu
             console.log(`Magic link gönderiliyor: ${email}`);
@@ -481,7 +481,7 @@ async function initializeSupabase() {
             isOnlineMode = true;
             return true;
         }
-    } catch (error) {
+        } catch (error) {
         console.warn('Gerçek Supabase bağlantısı kurulamadı:', error);
     }
     

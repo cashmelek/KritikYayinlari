@@ -1,222 +1,319 @@
-// Supabase bağlantı yapılandırması
+// Supabase Config JS - Kritik Yayınları Frontend
+// Bu dosya hem gerçek Supabase bağlantısını hem de offline mod için yerel veritabanı simülasyonunu içerir
+
+// Supabase Bağlantı Bilgileri
 const SUPABASE_URL = 'https://lddzbhbzaxigfejysary.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkZHpiaGJ6YXhpZ2ZlanlzYXJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg5OTExNzksImV4cCI6MjA2NDU2NzE3OX0.Mx0ve7D0zscuZsEmxYh8EALOtHVkYZeydgwOqtiGG34';
 
-// Supabase istemcisini oluştur
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Bağlantı yönetimi
+let lastSupabaseError = null;
+let lastConnectionCheckTime = 0;
+let connectionCheckInterval = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_INTERVAL = 5000; // 5 saniye
+let isOnlineMode = true;
 
-// Supabase kimlik doğrulama değişikliklerini dinle
-supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN') {
-        console.log('Kullanıcı giriş yaptı:', session.user);
-        
-        // Admin kontrolü yap
-        checkAdminUser(session.user);
-    } else if (event === 'SIGNED_OUT') {
-        console.log('Kullanıcı çıkış yaptı');
-        
-        // Admin sessionlarını temizle
-        clearAdminSession();
-    } else if (event === 'TOKEN_REFRESHED') {
-        console.log('Token yenilendi');
-        
-        // Yenilenen token'ı sessionStorage'a kaydet
-        if (session) {
-            updateAdminSession(session);
-        }
-    }
-});
-
-// Admin kullanıcısını kontrol et
-async function checkAdminUser(user) {
-    if (!user) return null;
-    
+// LocalStorage yardımcı fonksiyonları
+function getLocalData(key) {
     try {
-        // Admin tablosundan kullanıcıyı al
-        const { data, error } = await supabaseClient
-            .from('admin_users')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
-            
-        if (error) {
-            console.error('Admin kullanıcı kontrolü sırasında hata:', error);
-            return null;
-        }
-        
-        if (data && data.role === 'admin') {
-            console.log('Admin kullanıcısı bulundu:', data);
-            return data;
-        }
-        
-        console.warn('Kullanıcı admin değil');
-        return null;
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : null;
     } catch (error) {
-        console.error('Admin kontrolü sırasında hata:', error);
+        console.error(`LocalStorage'dan veri alınırken hata (${key}):`, error);
         return null;
     }
 }
 
-// Admin oturumunu güncelle
-function updateAdminSession(session) {
-    if (!session) return;
-    
+function saveLocalData(key, data) {
     try {
-        // Session bilgisini kaydet
-        sessionStorage.setItem('kritik_admin_session', JSON.stringify(session));
-    } catch (error) {
-        console.error('Admin oturumu güncellenirken hata:', error);
-    }
-}
-
-// Admin oturumunu temizle
-function clearAdminSession() {
-    try {
-        sessionStorage.removeItem('kritik_admin_logged_in');
-        sessionStorage.removeItem('kritik_admin_user');
-        sessionStorage.removeItem('kritik_admin_user_data');
-        sessionStorage.removeItem('kritik_admin_login_time');
-        sessionStorage.removeItem('kritik_admin_session');
-    } catch (error) {
-        console.error('Admin oturumu temizlenirken hata:', error);
-    }
-}
-
-// Hata durumunda kullanıcıyı bilgilendirmek için global bir fonksiyon
-function showSupabaseError(error) {
-    console.error('Supabase hatası:', error);
-    
-    // Eğer bir bildirim sistemi varsa, hata bildirimini göster
-    if (typeof showNotification === 'function') {
-        showNotification('Veritabanı işlemi sırasında bir hata oluştu: ' + error.message, 'error');
-    }
-}
-
-// Veritabanı bağlantısını kontrol et
-async function checkDatabaseConnection() {
-    try {
-        console.log('Supabase veritabanı bağlantısı kontrol ediliyor...');
-
-        const { data, error } = await supabaseClient
-            .from('admin_users')
-            .select('count')
-            .limit(1);
-
-        if (error) {
-            console.error('Veritabanı bağlantı hatası:', error);
-            return false;
-        }
-
-        console.log('Veritabanı bağlantısı başarılı.');
+        localStorage.setItem(key, JSON.stringify(data));
         return true;
     } catch (error) {
-        console.error('Veritabanı bağlantı kontrolü sırasında hata:', error);
+        console.error(`LocalStorage'a veri kaydedilirken hata (${key}):`, error);
         return false;
     }
 }
 
-// Admin kullanıcısı oluştur
-async function createAdminUser(email, password, username, name = '') {
+// Supabase bağlantısını başlat
+async function initSupabase() {
     try {
-        // Önce kullanıcı oluştur
-        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-            email,
-            password
-        });
+        console.log('Supabase bağlantısı başlatılıyor...');
         
-        if (authError) {
-            console.error('Kullanıcı oluşturma hatası:', authError);
-            return { success: false, error: authError };
+        // Supabase kütüphanesi var mı kontrol et
+        if (typeof supabase === 'undefined') {
+            console.error('Supabase kütüphanesi yüklenemedi!');
+            throw new Error('Supabase kütüphanesi bulunamadı');
         }
         
-        if (!authData.user) {
-            return { success: false, error: { message: 'Kullanıcı oluşturulamadı' } };
+        // Supabase istemcisini oluştur
+        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Bağlantıyı test et
+        const testResult = await checkDatabaseConnection();
+        
+        if (!testResult) {
+            console.warn('Supabase bağlantısı başarısız, çevrimdışı moda geçiliyor');
+            enableOfflineMode();
+            return false;
         }
         
-        // Ardından admin_users tablosuna ekle
-        const { data, error } = await supabaseClient
-            .from('admin_users')
-            .insert([
-                {
-                    user_id: authData.user.id,
-                    username,
-                    name,
-                    email,
-                    role: 'admin'
+        // Bağlantı kontrolünü başlat
+        startConnectionCheck();
+        
+        // Yeniden bağlanma sayacını sıfırla
+        reconnectAttempts = 0;
+        
+        console.log('Supabase bağlantısı başarıyla kuruldu');
+        return true;
+    } catch (error) {
+        console.error('Supabase bağlantısı kurulurken hata:', error);
+        lastSupabaseError = error;
+        
+        // Offline moda geç
+        enableOfflineMode();
+        
+        // Hata mesajı göster
+        if (typeof showMessage === 'function') {
+            showMessage('Veritabanı bağlantısı kurulamadı. Veriler yerel olarak yüklenecek.', 'warning');
+        }
+        
+        return false;
+    }
+}
+
+// Offline modu etkinleştir
+function enableOfflineMode() {
+    console.warn('Offline mod etkinleştiriliyor...');
+    isOnlineMode = false;
+    
+    // Basit bir yerel veritabanı oluştur
+    window.supabaseClient = {
+        from: (tableName) => ({
+            select: () => ({
+                // İlgili yerel veriyi getir
+                execute: async () => {
+                    const key = `kritik_${tableName}_data`;
+                    const data = getLocalData(key);
+                    return { data: data || [], error: null };
+                },
+                single: async () => {
+                    const key = `kritik_${tableName}_data`;
+                    const data = getLocalData(key);
+                    return { data: (data && data.length > 0) ? data[0] : null, error: null };
                 }
-            ])
-            .select();
-            
-        if (error) {
-            console.error('Admin kullanıcı oluşturma hatası:', error);
-            return { success: false, error };
-        }
-        
-        return { success: true, user: data[0] };
-    } catch (error) {
-        console.error('Admin kullanıcı oluşturma sırasında hata:', error);
-        return { success: false, error };
+            })
+        })
+    };
+    
+    // Bildirim göster
+    if (typeof showMessage === 'function') {
+        showMessage('Çevrimdışı moddasınız. Bazı içerikler görüntülenemeyebilir.', 'info');
     }
 }
 
-// Admin kullanıcısını güncelle
-async function updateAdminUser(userId, updates) {
+// Online moda geç
+async function enableOnlineMode() {
+    console.log('Online mod etkinleştiriliyor...');
+    
     try {
-        // Admin tablosunda güncelleme yap
-        const { data, error } = await supabaseClient
-            .from('admin_users')
-            .update(updates)
-            .eq('user_id', userId)
-            .select();
+        // Supabase bağlantısını yeniden kur
+        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Bağlantıyı test et
+        const { data, error } = await window.supabaseClient
+            .from('system_settings')
+            .select('count')
+            .limit(1);
             
         if (error) {
-            console.error('Admin kullanıcı güncelleme hatası:', error);
-            return { success: false, error };
+            throw error;
         }
         
-        return { success: true, user: data[0] };
+        // Bağlantı başarılı
+        isOnlineMode = true;
+        lastSupabaseError = null;
+        reconnectAttempts = 0;
+        
+        // Bildirim göster
+        if (typeof showMessage === 'function') {
+            showMessage('Çevrimiçi bağlantı kuruldu.', 'success');
+        }
+        
+        return true;
     } catch (error) {
-        console.error('Admin kullanıcı güncelleme sırasında hata:', error);
-        return { success: false, error };
+        console.error('Online moda geçerken hata:', error);
+        lastSupabaseError = error;
+        
+        // Çevrimdışı modda kalmaya devam et
+        isOnlineMode = false;
+        
+        return false;
     }
 }
 
-// Admin kullanıcılarını listele
-async function listAdminUsers() {
-    try {
-        const { data, error } = await supabaseClient
-            .from('admin_users')
-            .select('*')
-            .order('created_at', { ascending: false });
-            
-        if (error) {
-            console.error('Admin kullanıcıları listeleme hatası:', error);
-            return { success: false, error };
-        }
-        
-        return { success: true, users: data };
-    } catch (error) {
-        console.error('Admin kullanıcıları listeleme sırasında hata:', error);
-        return { success: false, error };
+// Bağlantı kontrolünü başlat
+function startConnectionCheck() {
+    // Zaten çalışıyor mu kontrol et
+    if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
     }
-}
-
-// Sayfa yüklendiğinde veritabanı bağlantısını kontrol et
-document.addEventListener('DOMContentLoaded', function() {
-    // Veritabanı bağlantısını kontrol et
+    
+    // İlk kontrolü yap
     checkDatabaseConnection();
-});
-
-// Hata durumunda yeniden bağlantı dene
-function reconnectSupabase() {
-    console.log('Supabase bağlantısı yeniden kuruluyor...');
-    return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Periyodik kontrol başlat (60 saniyede bir)
+    connectionCheckInterval = setInterval(checkDatabaseConnection, 60000);
 }
 
-// Global erişim için window nesnesine ekle
-window.supabaseClient = supabaseClient;
-window.reconnectSupabase = reconnectSupabase;
-window.createAdminUser = createAdminUser;
-window.updateAdminUser = updateAdminUser;
-window.listAdminUsers = listAdminUsers;
-window.checkAdminUser = checkAdminUser;
+// Veritabanı bağlantısını kontrol et
+async function checkDatabaseConnection() {
+    // Son kontrolden beri yeterli süre geçti mi?
+    const now = Date.now();
+    if (now - lastConnectionCheckTime < 5000) { // En az 5 saniye
+        return true;
+    }
+    
+    lastConnectionCheckTime = now;
+    
+    try {
+        console.log('Veritabanı bağlantısı kontrol ediliyor...');
+        
+        // Supabase client var mı?
+        if (!window.supabaseClient) {
+            throw new Error('Supabase istemcisi bulunamadı');
+        }
+        
+        // Basit bir sorgu dene
+        const { data, error } = await window.supabaseClient
+            .from('books')
+            .select('count')
+            .limit(1);
+            
+        if (error) {
+            // RLS hatası mı?
+            if (error.code === 'PGRST301' || error.message?.includes('policy')) {
+                console.warn('RLS politikası hatası, ancak bağlantı var');
+                
+                // Çevrimiçi moda geç
+                if (!isOnlineMode) {
+                    enableOnlineMode();
+                }
+                
+                return true;
+            }
+            
+            throw error;
+        }
+        
+        // Bağlantı başarılı
+        console.log('Veritabanı bağlantısı aktif');
+        
+        // Çevrimdışı modda isek çevrimiçi moda geç
+        if (!isOnlineMode) {
+            enableOnlineMode();
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Veritabanı bağlantı kontrolü sırasında hata:', error);
+        lastSupabaseError = error;
+        
+        // Çevrimiçi modda isek ve bağlantı kesilmişse
+        if (isOnlineMode) {
+            console.warn('Veritabanı bağlantısı kesildi, çevrimdışı moda geçiliyor');
+            enableOfflineMode();
+            
+            // Yeniden bağlanmayı dene
+            reconnectToSupabase();
+        }
+        
+        return false;
+    }
+}
+
+// Supabase'e yeniden bağlan
+async function reconnectToSupabase() {
+    // Maksimum yeniden bağlanma denemesi aşıldı mı?
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error('Maksimum yeniden bağlanma denemesi aşıldı');
+        
+        // Bildirim göster
+        if (typeof showMessage === 'function') {
+            showMessage('Veritabanına bağlanılamıyor. Sayfayı yenilemeyi deneyin.', 'error');
+        }
+        
+        return false;
+    }
+    
+    reconnectAttempts++;
+    console.log(`Yeniden bağlanma denemesi ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`);
+    
+    // Yeniden bağlanmayı biraz beklet
+    setTimeout(async () => {
+        try {
+            // Yeniden bağlan
+            const success = await enableOnlineMode();
+            
+            if (success) {
+                console.log('Yeniden bağlanma başarılı');
+                reconnectAttempts = 0;
+            } else {
+                // Başarısız olursa tekrar dene
+                reconnectToSupabase();
+            }
+        } catch (error) {
+            console.error('Yeniden bağlanma sırasında hata:', error);
+            // Başarısız olursa tekrar dene
+            reconnectToSupabase();
+        }
+    }, RECONNECT_INTERVAL * reconnectAttempts); // Her denemede biraz daha bekle
+}
+
+// Hata mesajlarını göstermek için yardımcı fonksiyon
+function showMessage(message, type = 'info') {
+    // Sayfa içinde tanımlı showNotification veya benzeri bir fonksiyon varsa kullan
+    if (typeof showNotification === 'function') {
+        showNotification(message, type);
+        return;
+    }
+    
+    // Yoksa konsola kaydet
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    
+    // Basit bir bildirim göster
+    if (type === 'error') {
+        alert(message);
+    }
+}
+
+// Yardımcı fonksiyon: Gerçek Supabase mi yoksa yerel simülasyon mu?
+function isRealSupabase() {
+    return isOnlineMode && window.supabaseClient && typeof window.supabaseClient.from === 'function';
+}
+
+// Hataları kullanıcı dostu hale getir
+function formatSupabaseError(error) {
+    if (!error) return 'Bilinmeyen hata';
+    
+    // RLS hatası
+    if (error.code === 'PGRST301' || error.message?.includes('policy')) {
+        return 'Bu verilere erişim yetkiniz yok. Lütfen giriş yapın veya yöneticinize başvurun.';
+    }
+    
+    // Bağlantı hatası
+    if (error.code === 'NETWORK_ERROR' || error.message?.includes('network') || error.message?.includes('NetworkError')) {
+        return 'Sunucuya bağlanılamıyor. Lütfen internet bağlantınızı kontrol edin.';
+    }
+    
+    // Diğer hatalar
+    return error.message || error.toString();
+}
+
+// Sayfa kapanırken temizlik işlemleri
+window.addEventListener('beforeunload', function() {
+    // Kontrol aralığını temizle
+    if (connectionCheckInterval) {
+        clearInterval(connectionCheckInterval);
+    }
+});

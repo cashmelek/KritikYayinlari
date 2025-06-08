@@ -85,113 +85,108 @@ async function loadBooks() {
         if (urlParams.get('filter') === 'new') {
             query = query.eq('is_new', true);
             filterInfo = 'yeni çıkanlar';
-        } else if (urlParams.get('filter') === 'bestseller') {
-            query = query.eq('is_bestseller', true);
-            filterInfo = 'çok satanlar';
         }
         
-        // Sıralama
+        // Sıralama - her durumda created_at tarihine göre sırala
         query = query.order('created_at', { ascending: false });
         
         // Sorguyu çalıştır
         const { data: books, error } = await query;
         
-        // Hata kontrolü
         if (error) {
             console.error('Kitaplar yüklenirken hata:', error);
-            booksGrid.innerHTML = `
-                <div class="col-span-full text-center py-8">
-                    <p class="text-gray-500">Kitaplar yüklenirken bir sorun oluştu. Lütfen daha sonra tekrar deneyin.</p>
-                </div>
-            `;
-            return;
+            throw error;
         }
         
-        // Kitap yoksa
-        if (!books || books.length === 0) {
-            booksGrid.innerHTML = `
-                <div class="col-span-full text-center py-8">
-                    <div class="mb-4">
-                        <i class="ri-book-2-line text-5xl text-gray-300"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-600 mb-2">Kitap Bulunamadı</h3>
-                    <p class="text-gray-500">Aradığınız kriterlere uygun kitap bulunmuyor.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        // Filtre bilgisini güncelle
-        const filterInfoElement = document.getElementById('filter-info');
-        if (filterInfoElement && filterInfo) {
-            filterInfoElement.textContent = filterInfo;
-            filterInfoElement.classList.remove('hidden');
-        }
-        
-        // Kitapları listeleme
-        const booksHTML = books.map(book => createBookCard(book)).join('');
-        booksGrid.innerHTML = booksHTML;
-        
+        displayBooks(books, filterInfo);
     } catch (error) {
-        console.error('Kitaplar yüklenirken beklenmeyen hata:', error);
-        const booksGrid = document.querySelector('.books-grid');
-        if (booksGrid) {
-            booksGrid.innerHTML = `
-                <div class="col-span-full text-center py-8">
-                    <p class="text-gray-500">Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.</p>
-                </div>
-            `;
-        }
+        console.error('Kitaplar yüklenirken hata:', error);
+        displayError('Kitaplar yüklenirken bir hata oluştu. Lütfen sayfayı yenileyip tekrar deneyin.');
     }
 }
 
-// Kitap kartı oluştur
-function createBookCard(book) {
-    // Yazar adını al - authors tablosundan
-    let authorName = 'Bilinmeyen Yazar';
-    if (book.authors) {
-        if (typeof book.authors === 'string') {
-            authorName = book.authors;
-        } else if (book.authors.name) {
-            authorName = book.authors.name;
-        } else if (Array.isArray(book.authors) && book.authors.length > 0) {
-            authorName = book.authors[0].name || 'Bilinmeyen Yazar';
+// Kitapları göster
+function displayBooks(books, filterInfo = '') {
+    const booksGrid = document.querySelector('.books-grid');
+    if (!booksGrid) return;
+    
+    // Filtreleme bilgisi varsa göster
+    if (filterInfo) {
+        // Filtreleme bilgisini göster
+        const filterContainer = document.querySelector('.filter-info-container');
+        if (filterContainer) {
+            filterContainer.innerHTML = filterInfo;
         }
     }
     
-    // Kapak resmi URL'sini kontrol et
-    const coverUrl = book.cover_url || 'images/placeholder.png';
+        if (!books || books.length === 0) {
+            booksGrid.innerHTML = `
+            <div class="col-span-full text-center py-12 bg-gray-50 rounded-lg">
+                <div class="text-gray-400 text-5xl mb-4">
+                    <i class="ri-book-open-line"></i>
+                    </div>
+                <h3 class="text-xl font-medium text-gray-700 mb-2">Kitap Bulunamadı</h3>
+                <p class="text-gray-500">Aradığınız kriterlere uygun kitap bulunamadı.</p>
+                </div>
+            `;
+            return;
+        }
+        
+    booksGrid.innerHTML = books.map(book => {
+        // Yazar adını daha güvenli bir şekilde al ve XSS koruması ekle
+    let authorName = 'Bilinmeyen Yazar';
+    if (book.authors) {
+        if (typeof book.authors === 'string') {
+                authorName = escapeHtml(book.authors);
+        } else if (book.authors.name) {
+                authorName = escapeHtml(book.authors.name);
+        } else if (Array.isArray(book.authors) && book.authors.length > 0) {
+                authorName = escapeHtml(book.authors[0].name || 'Bilinmeyen Yazar');
+        }
+    }
     
-    // Fiyat bilgisini kontrol et
-    const price = book.price || '';
-    const originalPrice = book.original_price || '';
-    const hasDiscount = book.discount && book.discount > 0;
+        // Kitap başlığını güvenli hale getir
+        const bookTitle = escapeHtml(book.title || '');
+        
+        // Kitap ID'sini güvenli hale getir
+        const bookId = parseInt(book.id) || 0;
     
-    // İndirim yüzdesi
-    const discountPercent = book.discount || 0;
+        // Etiketleri belirle
+        let isNew = '';
+        
+        // is_new özelliği true olan kitaplar için "Yeni" etiketi göster
+        if (book.is_new === true) {
+            isNew = '<div class="absolute top-3 right-3"><span class="bg-primary text-white text-xs px-2 py-1 rounded-full">Yeni</span></div>';
+        }
+        
+        // Görsel URL'sini işle ve güvenli hale getir
+        let coverUrl = 'images/placeholder.png';
+        if (book.cover_url) {
+            // Base64 verisi ise doğrudan kullan
+            if (typeof book.cover_url === 'string' && book.cover_url.startsWith('data:')) {
+                coverUrl = book.cover_url;
+            } else if (typeof book.cover_url === 'string') {
+                // URL enjeksiyon saldırılarını önlemek için
+                coverUrl = book.cover_url.replace(/["'<>]/g, '');
+            }
+        }
     
     return `
-        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <div class="book-image-container h-64 flex items-center justify-center bg-gray-100 overflow-hidden">
-                <a href="kitap-detay.html?kitap_id=${book.id}" class="block w-full h-full relative">
-                    <img src="${coverUrl}" alt="${book.title}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" onerror="this.src='images/placeholder.png'">
-                    ${hasDiscount ? `<div class="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">%${discountPercent} İndirim</div>` : ''}
-                    ${book.is_new ? `<div class="absolute top-2 left-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded">Yeni</div>` : ''}
-                </a>
+            <div class="book-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <a href="kitap-detay.html?kitap_id=${bookId}" class="block">
+                    <div class="aspect-square overflow-hidden bg-gray-100 relative">
+                        <img src="${coverUrl}" alt="${bookTitle}" class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" onerror="this.src='images/placeholder.png'">
+                        ${isNew}
             </div>
             <div class="p-4">
-                <h3 class="font-bold text-secondary line-clamp-2 h-12 mb-1">${book.title}</h3>
+                        <h3 class="font-bold text-gray-800 mb-1 line-clamp-2">${bookTitle}</h3>
                 <p class="text-gray-600 text-sm mb-2">${authorName}</p>
-                <div class="flex justify-between items-center">
-                    <div>
-                        <span class="text-primary font-bold">${price}</span>
-                        ${hasDiscount ? `<span class="text-gray-400 line-through text-sm ml-2">${originalPrice}</span>` : ''}
+                        <div class="flex justify-end items-center mt-2">
+                            <span class="bg-primary text-white text-xs px-3 py-1 rounded-full">İncele</span>
+                        </div>
                     </div>
-                    <a href="kitap-detay.html?kitap_id=${book.id}" class="bg-primary hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">
-                        İncele
                     </a>
-                </div>
-            </div>
         </div>
     `;
+    }).join('');
 } 
