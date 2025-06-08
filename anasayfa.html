@@ -13,13 +13,17 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
 <link rel="icon" type="image/png" href="images/favicon.png">
 <!-- Supabase CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/dist/umd/supabase.min.js"></script>
+<!-- Supabase Init -->
+<script src="js/supabase-init.js?v=1.0"></script>
 <!-- Supabase Config -->
 <script src="js/supabase-config.js?v=1.1"></script>
 <!-- Görsel Ölçeklendirme Modülü -->
 <script src="js/image-scaler.js?v=1.0"></script>
 <!-- Görsel Yardımcı Modülü -->
 <script src="js/image-helper.js?v=1.0"></script>
+<!-- Banner Display Modülü -->
+<script src="js/banner-display.js?v=1.0"></script>
 <!-- Sayfa stili -->
 <style>
 :where([class^="ri-"])::before { content: "\f3c2"; }
@@ -101,6 +105,27 @@ nav a:hover {
   height: 100%;
   object-fit: cover;
   transition: all 0.3s ease;
+}
+
+/* Banner alanı için yeni stiller */
+#banner-container {
+  min-height: 400px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.banner-slider {
+  height: 100%;
+  width: 100%;
+}
+
+.slide {
+  transition: opacity 0.5s ease-in-out;
+}
+
+.slide-bg {
+  position: relative;
 }
 </style>
 </head>

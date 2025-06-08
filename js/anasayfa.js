@@ -1,9 +1,22 @@
 // Anasayfa.js - Anasayfa için JavaScript fonksiyonları
 
+// Sayfa yükleme olayını dinle
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Anasayfa yükleniyor...');
+    
+    // Banner yükleme
+    loadPageBanners('homepage');
+    
+    // Kitap ve yazar verilerini yükle
+    loadNewBooks();
+    loadBestsellers();
+    loadAuthors();
+});
+
 // Banner yükleme fonksiyonu
-async function loadPageBanners(location = 'home') {
+async function loadPageBanners(location = 'homepage') {
     try {
-        console.log('Banner\'lar yükleniyor...');
+        console.log('Banner\'lar yükleniyor...', 'location:', location);
         
         // Supabase client kontrolü
         if (!window.supabaseClient) {
@@ -30,8 +43,7 @@ async function loadPageBanners(location = 'home') {
         console.log('Supabase sorgu tamamlandı');
         console.log('Sorgu hatası:', error);
         console.log('Gelen banner sayısı:', banners ? banners.length : 0);
-        console.log('Banner verileri:', banners);
-            
+        
         if (error) {
             console.error('Banner\'lar yüklenirken Supabase hatası:', error);
             throw error;
@@ -39,8 +51,26 @@ async function loadPageBanners(location = 'home') {
         
         if (!banners || banners.length === 0) {
             console.warn('Banner verileri bulunamadı, varsayılan banner korunuyor.');
+            // Varsayılan banner göster
+            bannerContainer.innerHTML = `
+                <div class="container mx-auto px-8 h-full flex items-center">
+                    <div class="text-left max-w-2xl">
+                        <div class="mb-4">
+                            <i class="ri-book-open-line text-6xl text-primary"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold text-secondary mb-2">Kritik Yayınları'na Hoş Geldiniz</h2>
+                        <p class="text-lg text-gray-600 mb-4">Edebiyatın dünyasını en seçkin eserlerle keşfedin</p>
+                        <a href="kitaplar.html" class="inline-flex items-center bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors">
+                            Kitapları İncele
+                            <i class="ri-arrow-right-line ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+            `;
             return;
         }
+        
+        console.log('Banner verileri:', banners);
         
         // Banner slider HTML'ini oluştur
         bannerContainer.innerHTML = `
@@ -121,10 +151,17 @@ async function loadPageBanners(location = 'home') {
         const bannerContainer = document.getElementById('banner-container');
         if (bannerContainer) {
             bannerContainer.innerHTML = `
-                <div class="w-full h-full bg-red-50 flex items-center justify-center">
-                    <div class="text-center text-red-600">
-                        <i class="ri-error-warning-line text-4xl mb-4"></i>
-                        <p>Banner\'lar yüklenirken bir hata oluştu</p>
+                <div class="container mx-auto px-8 h-full flex items-center">
+                    <div class="text-left max-w-2xl">
+                        <div class="mb-4">
+                            <i class="ri-book-open-line text-6xl text-primary"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold text-secondary mb-2">Kritik Yayınları'na Hoş Geldiniz</h2>
+                        <p class="text-lg text-gray-600 mb-4">Edebiyatın dünyasını en seçkin eserlerle keşfedin</p>
+                        <a href="kitaplar.html" class="inline-flex items-center bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors">
+                            Kitapları İncele
+                            <i class="ri-arrow-right-line ml-2"></i>
+                        </a>
                     </div>
                 </div>
             `;
@@ -216,45 +253,6 @@ function setupSliderHoverEvents() {
         bannerContainer.addEventListener('mouseleave', startAutoSlide);
     }
 }
-
-// Sayfa yüklendiğinde çalışacak kodlar
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('DOM yüklendi, banner\'lar yüklemeye başlıyor...');
-    
-    // Banner konteynerini gizle
-    const bannerContainer = document.getElementById('banner-container');
-    if (bannerContainer) {
-        bannerContainer.style.display = 'none';
-    }
-
-    // Supabase client'ın yüklenmesini bekle
-    let retryCount = 0;
-    const maxRetries = 10;
-    
-    const waitForSupabase = async () => {
-        if (window.supabaseClient) {
-            console.log('Supabase client hazır, banner\'lar yükleniyor...');
-            // Banner'ları yükle
-            await loadPageBanners('home');
-            
-            // Diğer içerikleri yükle
-            await loadNewBooks();
-            await loadBestsellers();
-            await loadAuthors();
-            
-            // Gerçek zamanlı güncellemeleri başlat
-            setupHomePageRealtime();
-        } else if (retryCount < maxRetries) {
-            retryCount++;
-            console.log(`Supabase client bekleniyor... (${retryCount}/${maxRetries})`);
-            setTimeout(waitForSupabase, 500);
-        } else {
-            console.error('Supabase client yüklenemedi');
-        }
-    };
-    
-    await waitForSupabase();
-});
 
 // Yeni çıkan kitapları yükle
 async function loadNewBooks() {
