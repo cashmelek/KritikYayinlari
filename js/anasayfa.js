@@ -219,8 +219,14 @@ function setupSliderHoverEvents() {
 
 // Sayfa yüklendiğinde çalışacak kodlar
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('DOM yüklendi, banner\'lar yüklenmeye başlıyor...');
+    console.log('DOM yüklendi, banner\'lar yüklemeye başlıyor...');
     
+    // Banner konteynerini gizle
+    const bannerContainer = document.getElementById('banner-container');
+    if (bannerContainer) {
+        bannerContainer.style.display = 'none';
+    }
+
     // Supabase client'ın yüklenmesini bekle
     let retryCount = 0;
     const maxRetries = 10;
