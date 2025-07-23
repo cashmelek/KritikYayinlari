@@ -282,9 +282,6 @@ function showMessage(message, type = 'info') {
     console.log(`[${type.toUpperCase()}] ${message}`);
     
     // Basit bir bildirim göster
-    if (type === 'error') {
-        alert(message);
-    }
 }
 
 // Yardımcı fonksiyon: Gerçek Supabase mi yoksa yerel simülasyon mu?

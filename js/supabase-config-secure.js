@@ -199,7 +199,7 @@ function showError(message) {
     if (typeof showNotification === 'function') {
         showNotification(message, 'error');
     } else {
-        alert(message);
+        console.error('Hata:', message);
     }
 }
 

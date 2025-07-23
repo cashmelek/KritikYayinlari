@@ -39,7 +39,7 @@ async function fetchBanners() {
     const { data, error } = await supabaseClient
       .from('banners')
       .select('*')
-      .eq('active', true)
+      .eq('is_active', true)
       .order('order_number', { ascending: true });
       
     if (error) throw error;
