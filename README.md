@@ -174,3 +174,18 @@ Gerçek bir üretim ortamına geçmeden önce:
 ## İletişim
 
 Bu projeyle ilgili sorularınız için Kritik Yayınları ile iletişime geçebilirsiniz. 
+
+# Admin Panelini Vercel'de Yayınlama
+
+## Kurulum ve Yayınlama
+
+1. Bu repoyu kendi GitHub hesabınıza fork'layın veya ZIP olarak indirin.
+2. [Vercel](https://vercel.com/) hesabı açın ve bu projeyi yeni bir proje olarak ekleyin.
+3. Proje ayarlarında, `admin` klasörünü kök dizin veya `public/admin` olarak bırakabilirsiniz. (Varsayılan olarak kökten çalışır.)
+4. Kök dizinde bulunan `vercel.json` dosyası, admin panelinin doğru şekilde sunulmasını sağlar.
+5. Supabase veya başka bir harici servise bağlantı için gerekli anahtarlarınız JS dosyalarında tanımlı olmalıdır.
+
+## Notlar
+- Proje tamamen statik dosyalardan oluştuğu için ek bir backend gerektirmez.
+- Güvenlik için Supabase anahtarlarınızı paylaşmayın.
+- Giriş sistemi demo modunda ise, canlıya almadan önce gerçek kimlik doğrulama ekleyin. 
