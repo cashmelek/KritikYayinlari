@@ -174,4 +174,3 @@ Gerçek bir üretim ortamına geçmeden önce:
 ## İletişim
 
 Bu projeyle ilgili sorularınız için Kritik Yayınları ile iletişime geçebilirsiniz. 
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/cashmelek/KritikYayinlari?utm_source=oss&utm_medium=github&utm_campaign=cashmelek%2FKritikYayinlari&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
